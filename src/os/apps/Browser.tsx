@@ -1,5 +1,4 @@
 import { useState, useRef } from 'react';
-import { useOS } from '../OSContext';
 import { Icon } from '../Icon';
 
 interface Props {

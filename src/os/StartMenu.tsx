@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOS } from './OSContext';
 import { TASKBAR_APPS, AppId } from './types';
 import { Icon } from './Icon';
+import { AppLogo } from './AppLogo';
 
 interface Props {
   open: boolean;
@@ -51,14 +52,15 @@ export function StartMenu({ open, onClose, startPos }: Props) {
   const { openApp, installedApps, launchInstalledApp, fileSystem } = useOS();
   const [query, setQuery] = useState('');
 
-  const installedEntries = installedApps.map((a) => ({
-    appId: a.appId as AppId,
-    label: a.name,
-    icon: a.icon,
-    isCustom: true,
-  }));
-
-  const allPinned = [...PINNED, ...installedEntries];
+  const allPinned = useMemo(() => {
+    const installedEntries = installedApps.map((a) => ({
+      appId: a.appId as AppId,
+      label: a.name,
+      icon: a.icon,
+      isCustom: true,
+    }));
+    return [...PINNED, ...installedEntries];
+  }, [installedApps]);
 
   // Predictive search: combines apps and file system files
   const searchResults = useMemo<SearchResult[]>(() => {
@@ -92,7 +94,7 @@ export function StartMenu({ open, onClose, startPos }: Props) {
       }));
 
     return [...appResults, ...fileResults];
-  }, [query, fileSystem, allPinned, installedApps]);
+  }, [query, fileSystem, allPinned]);
 
   const filtered = query
     ? [...TASKBAR_APPS, ...allPinned].filter((a) =>
@@ -127,10 +129,17 @@ export function StartMenu({ open, onClose, startPos }: Props) {
     setQuery('');
   };
 
-  // Position: align above the start button if we have its position
-  const menuStyle: React.CSSProperties = startPos
-    ? { left: Math.max(8, Math.min(startPos.x, window.innerWidth - 580)), bottom: 64 }
-    : { bottom: 64, left: '50%', transform: 'translateX(-50%)' };
+  // Position: precisely query the start button bounding box and center directly above it
+  const menuWidth = typeof window !== 'undefined' ? Math.min(540, window.innerWidth * 0.92) : 540;
+  const menuLeft = startPos
+    ? Math.max(12, Math.min(startPos.x + startPos.width / 2 - menuWidth / 2, (typeof window !== 'undefined' ? window.innerWidth : 1200) - menuWidth - 12))
+    : (typeof window !== 'undefined' ? (window.innerWidth - menuWidth) / 2 : 12);
+
+  const menuStyle: React.CSSProperties = {
+    left: menuLeft,
+    bottom: 56,
+    width: menuWidth,
+  };
 
   return (
     <AnimatePresence>
@@ -138,40 +147,50 @@ export function StartMenu({ open, onClose, startPos }: Props) {
         <>
           <div className="fixed inset-0 z-40" onClick={onClose} />
           <motion.div
-            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            initial={{ opacity: 0, y: 20, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 24, scale: 0.98 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-            className="liquid-glass-taskbar fixed z-50 w-[560px] max-w-[92vw] rounded-2xl p-5"
+            exit={{ opacity: 0, y: 20, scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 420, damping: 32 }}
+            className="glass fixed z-50 rounded-2xl p-5"
             style={menuStyle}
           >
+            {/* Header with AppLogo & OS Branding */}
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2.5">
+                <AppLogo size={24} glow />
+                <span className="text-sm font-semibold tracking-wide text-white/95">LiquidOS</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono">v3.1</span>
+              </div>
+              <div className="text-[11px] text-white/50">Gargantua Cosmic Edition</div>
+            </div>
+
             {/* Search */}
-            <div className="flex items-center gap-2 bg-white/10 border border-white/15 rounded-full px-4 py-2 mb-5 focus-within:border-brand-400 transition">
-              <Icon name="Search" size={16} className="text-white/40" />
+            <div className="flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-full px-4 py-2 mb-4 focus-within:border-cyan-400/50 focus-within:bg-white/10 transition">
+              <Icon name="Search" size={15} className="text-white/40" />
               <input
                 autoFocus
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search apps, files, and settings"
-                className="flex-1 bg-transparent text-sm text-white/90 outline-none"
+                placeholder="Search apps, celestial files, settings..."
+                className="flex-1 bg-transparent text-sm text-white/90 outline-none placeholder:text-white/30"
               />
             </div>
 
             {/* Predictive search results */}
             {query.trim() && searchResults.length > 0 && (
-              <div className="mb-5">
+              <div className="mb-4">
                 <div className="text-xs text-white/50 mb-2 font-medium flex items-center gap-1">
-                  <Icon name="Sparkles" size={11} className="text-violet-300" /> Predicted results
+                  <Icon name="Sparkles" size={11} className="text-cyan-300" /> Predicted results
                 </div>
                 <div className="space-y-1">
                   {searchResults.map((result, i) => (
                     <button
                       key={`${result.type}-${result.label}-${i}`}
                       onClick={() => launchSearchResult(result)}
-                      className="w-full flex items-center gap-3 p-2 rounded-lg hover:bg-white/10 transition text-left group"
+                      className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-white/10 transition text-left group"
                     >
-                      <div className="h-8 w-8 rounded-lg glass-panel flex items-center justify-center shrink-0 group-hover:scale-110 transition">
-                        <Icon name={result.icon} size={14} className="text-brand-300" />
+                      <div className="h-8 w-8 rounded-lg bg-white/10 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
+                        <Icon name={result.icon} size={15} className="text-cyan-300" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm text-white/90 truncate">{result.label}</div>
@@ -190,15 +209,15 @@ export function StartMenu({ open, onClose, startPos }: Props) {
             <div className="text-xs text-white/50 mb-3 font-medium">
               {query ? 'All results' : 'Pinned'}
             </div>
-            <div className="grid grid-cols-6 gap-3 mb-5 max-h-[280px] overflow-y-auto">
+            <div className="grid grid-cols-6 gap-2.5 mb-4 max-h-[260px] overflow-y-auto">
               {filtered.map((app) => (
                 <button
                   key={app.appId}
                   onClick={() => launch(app)}
-                  className="flex flex-col items-center gap-2 p-2 rounded-xl hover:bg-white/10 transition group"
+                  className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 transition group"
                 >
-                  <div className="h-12 w-12 rounded-xl glass-panel flex items-center justify-center group-hover:scale-110 group-hover:liquid-glow transition-all">
-                    <Icon name={app.icon} size={22} className="text-brand-300" />
+                  <div className="h-11 w-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center group-hover:scale-105 group-hover:bg-white/15 transition-all">
+                    <Icon name={app.icon} size={20} className="text-cyan-300" />
                   </div>
                   <span className="text-[10px] text-white/80 text-center leading-tight truncate max-w-full">{app.label}</span>
                 </button>
@@ -211,15 +230,19 @@ export function StartMenu({ open, onClose, startPos }: Props) {
             </div>
 
             {/* User + power */}
-            <div className="flex items-center justify-between pt-4 border-t border-white/10">
-              <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-full bg-gradient-to-br from-brand-400 to-accent-500 flex items-center justify-center text-white text-sm font-semibold">
-                  <Icon name="User" size={18} />
+            <div className="flex items-center justify-between pt-3 border-t border-white/10">
+              <div className="flex items-center gap-2.5">
+                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white text-xs font-semibold shadow-md">
+                  <Icon name="User" size={16} />
                 </div>
-                <span className="text-sm text-white/80">Liquid User</span>
+                <div className="text-xs text-white/90 font-medium">Space Explorer</div>
               </div>
-              <button className="p-2 rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition" title="Power">
-                <Icon name="Power" size={18} />
+              <button
+                onClick={onClose}
+                className="p-1.5 rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition"
+                title="Power / Close"
+              >
+                <Icon name="Power" size={16} />
               </button>
             </div>
           </motion.div>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useOS } from '../OSContext';
-import { VirtualFolder, VirtualNode, getFolder } from '../fileSystem';
+import { VirtualFolder, VirtualNode } from '../fileSystem';
 import { Icon } from '../Icon';
 
 interface Props {

@@ -22,7 +22,6 @@ function tryEval(expr: string): string | null {
     const sanitized = expr.replace(/[^-()\d/*+.%\s]/g, '');
     if (!sanitized.trim()) return null;
     if (sanitized.includes('//')) return null;
-    // eslint-disable-next-line no-new-func
     const result = Function(`"use strict"; return (${sanitized})`)();
     if (typeof result === 'number' && isFinite(result)) {
       return String(Math.round(result * 1e10) / 1e10);
@@ -159,7 +158,7 @@ export function TerminalApp() {
         print(`CPU:          ${navigator.hardwareConcurrency ?? 'Unknown'} cores`);
         print(`Memory:       ${(navigator as Navigator & { deviceMemory?: number }).deviceMemory ? (navigator as Navigator & { deviceMemory?: number }).deviceMemory + ' GB' : 'Unknown'}`);
         print(`Resolution:   ${window.innerWidth}x${window.innerHeight}`);
-        print(`GPU:          WebGL ${(() => { try { const c = document.createElement('canvas'); return !!c.getContext('webgl2') ? '2.0' : '1.0'; } catch { return 'N/A'; } })()}`);
+        print(`GPU:          WebGL ${(() => { try { const c = document.createElement('canvas'); return c.getContext('webgl2') ? '2.0' : '1.0'; } catch { return 'N/A'; } })()}`);
         print(`Browser:      ${navigator.userAgent.split(' ').pop() ?? 'Unknown'}`);
         print(`Uptime:       ${Math.floor(performance.now() / 1000)}s`);
         break;

@@ -1,0 +1,6 @@
+{
+  "name": "LiquidOS",
+  "description": "A web-based desktop operating system simulation with liquid glass UI, file system, apps, and window management.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

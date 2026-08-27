@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOS } from '../OSContext';
 import { STORE_CATALOG, StoreApp, InstalledApp } from '../types';
@@ -22,7 +22,6 @@ export function AppStoreApp() {
   const [repoError, setRepoError] = useState('');
   const [installing, setInstalling] = useState(false);
   const [detailApp, setDetailApp] = useState<StoreApp | InstalledApp | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const tabs: { id: Tab; label: string; icon: string }[] = [
     { id: 'featured', label: 'Featured', icon: 'Star' },

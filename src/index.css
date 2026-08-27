@@ -1,0 +1,302 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --glass-border: rgba(255, 255, 255, 0.04);
+  --glass-border-dark: rgba(255, 255, 255, 0.02);
+  --glass-highlight: rgba(255, 255, 255, 0.06);
+  --theme-blur: 24px;
+  --theme-opacity: 0.03;
+  --theme-radius: 16px;
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  user-select: none;
+}
+
+/* ============================================================
+   TRUE LIQUID GLASS — SVG #liquid-glass-lens Refraction Engine
+   100% Transparency with Fluid Optical Displacement
+   Zero Generic White Outlines — Defined solely by refraction & specular sheen
+   ============================================================ */
+
+/* ===== LIQUID GLASS WINDOW ===== */
+.liquid-glass-window {
+  position: relative;
+  background: rgba(255, 255, 255, var(--theme-opacity, 0.03));
+  backdrop-filter: url(#liquid-glass-lens) blur(14px) saturate(180%);
+  -webkit-backdrop-filter: url(#liquid-glass-lens) blur(14px) saturate(180%);
+  border: none;
+  border-radius: var(--theme-radius, 16px);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.65),
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.35);
+  isolation: isolate;
+  transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Focused Window Sheen & Refractive Aura */
+.liquid-glass-window.is-focused {
+  box-shadow:
+    0 28px 70px rgba(0, 0, 0, 0.75),
+    0 8px 24px rgba(0, 0, 0, 0.5),
+    0 0 36px rgba(56, 189, 248, 0.12),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.2),
+    inset 0 -1px 3px 0 rgba(0, 0, 0, 0.45);
+}
+
+/* Drag fallback — ultra smooth 60fps GPU performance */
+.liquid-glass-window.is-dragging {
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  box-shadow: 0 32px 80px rgba(0, 0, 0, 0.8);
+}
+
+/* Glossy specular top sheen */
+.liquid-glass-window::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    145deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.03) 22%,
+    rgba(255, 255, 255, 0.0) 45%,
+    rgba(255, 255, 255, 0.0) 70%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: overlay;
+}
+
+/* Inner viscous edge refraction */
+.liquid-glass-window::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.1), inset 0 -1px 2px rgba(0, 0, 0, 0.35);
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Window Control Buttons MUST be unblockable */
+.window-controls-container {
+  position: relative;
+  z-index: 99999 !important;
+  pointer-events: auto !important;
+}
+
+/* ===== LIQUID GLASS FULL-WIDTH TASKBAR ===== */
+.liquid-glass-taskbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100vw;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: url(#frosted-dock) blur(20px) saturate(180%);
+  -webkit-backdrop-filter: url(#frosted-dock) blur(20px) saturate(180%);
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 -8px 32px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
+  isolation: isolate;
+}
+
+.liquid-glass-taskbar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.01) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+  mix-blend-mode: overlay;
+}
+
+/* ===== BASE GLASS PANELS & START MENU ===== */
+.glass {
+  position: relative;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: url(#frosted-menu) blur(24px) saturate(190%);
+  -webkit-backdrop-filter: url(#frosted-menu) blur(24px) saturate(190%);
+  border: none;
+  border-radius: 16px;
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.7),
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 -1px 2px 0 rgba(0, 0, 0, 0.4);
+  isolation: isolate;
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.glass-panel-hover:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+
+/* ============================================================
+   ALTERNATIVE DESIGN ENGINES
+   ============================================================ */
+
+/* 1. Frosted Blur Theme */
+.engine-frosted-blur .liquid-glass-window,
+.engine-frosted-blur .liquid-glass-taskbar,
+.engine-frosted-blur .glass {
+  backdrop-filter: blur(28px) saturate(190%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(190%) !important;
+  background: rgba(18, 18, 28, 0.25);
+  border: none;
+}
+
+/* 2. Pure Liquid Refraction Theme */
+.engine-windows-mica .liquid-glass-window,
+.engine-windows-mica .liquid-glass-taskbar,
+.engine-windows-mica .glass {
+  backdrop-filter: url(#liquid-glass-lens) blur(18px) saturate(200%) !important;
+  -webkit-backdrop-filter: url(#liquid-glass-lens) blur(18px) saturate(200%) !important;
+  background: rgba(255, 255, 255, 0.02);
+  border: none;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+/* 3. Dark Cosmic Slate Theme */
+.engine-dark-slate .liquid-glass-window,
+.engine-dark-slate .liquid-glass-taskbar,
+.engine-dark-slate .glass {
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  background: rgba(10, 12, 18, 0.45);
+  border: none;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7);
+}
+
+/* 4. Cyberpunk Neon Grid Theme */
+.engine-cyberpunk-neon .liquid-glass-window {
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  background: rgba(10, 6, 24, 0.4);
+  border: 1px solid rgba(0, 255, 204, 0.4);
+  box-shadow: 0 0 24px rgba(0, 255, 204, 0.25), 0 16px 40px rgba(0, 0, 0, 0.6);
+}
+
+.engine-cyberpunk-neon .liquid-glass-taskbar {
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  background: rgba(8, 4, 20, 0.5);
+  border-top: 1px solid rgba(255, 0, 127, 0.4);
+  box-shadow: 0 0 20px rgba(255, 0, 127, 0.25);
+}
+
+/* ============================================================
+   NEON SPECULAR AURA GLOWS
+   ============================================================ */
+.liquid-glow {
+  box-shadow: 0 0 24px rgba(249, 115, 22, 0.45), 0 0 48px rgba(234, 88, 12, 0.2);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 24px rgba(6, 182, 212, 0.45), 0 0 48px rgba(14, 165, 233, 0.2);
+}
+
+.glow-violet {
+  box-shadow: 0 0 24px rgba(168, 85, 247, 0.45), 0 0 48px rgba(147, 51, 234, 0.2);
+}
+
+/* ============================================================
+   MAC DOCK MAGNIFICATION & UBUNTU LAUNCHER
+   ============================================================ */
+.mac-dock-item {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), margin 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mac-dock-item:hover {
+  transform: translateY(-8px) scale(1.22);
+}
+
+/* Active running app indicator dot */
+.app-active-pip {
+  position: absolute;
+  bottom: 2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
+}
+
+/* ============================================================
+   WINDOWS 8 METRO LIVE TILES
+   ============================================================ */
+.metro-tile {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.metro-tile:hover {
+  transform: scale(1.025) translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.55);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.35), 0 0 20px rgba(255, 255, 255, 0.2);
+}
+
+.metro-tile:active {
+  transform: scale(0.98);
+}
+
+/* Custom Scrollbar for all apps */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.4);
+}
