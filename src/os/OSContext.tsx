@@ -188,11 +188,37 @@ export function OSProvider({ children }: { children: ReactNode }) {
   const [selectedCustomId, setSelectedCustomId] = useState<string | null>(persistedSettings.selectedCustomId ?? null);
   const [theme, setTheme] = useState<Theme>(persistedSettings.theme ?? 'dark');
 
-  // Shell & Design Engines
-  const [shellMode, setShellMode] = useState<ShellMode>(persistedSettings.shellMode ?? 'windows');
+  // Shell & Design Engines — Automated Mobile/Touch Matrix Detection
+  const [shellMode, setShellMode] = useState<ShellMode>(() => {
+    if (typeof window !== 'undefined') {
+      const isMobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+        window.innerWidth < 768;
+      if (isMobile) return 'metro';
+    }
+    return (persistedSettings.shellMode as ShellMode) ?? 'windows';
+  });
   const [taskbarStyle, setTaskbarStyle] = useState<WindowsTaskbarStyle>(persistedSettings.taskbarStyle ?? 'modern');
   const [designEngine, setDesignEngine] = useState<DesignEngine>(persistedSettings.designEngine ?? 'liquid-glass');
   const [nebulaPreset, setNebulaPreset] = useState<NebulaPreset>(persistedSettings.nebulaPreset ?? 'gargantua');
+
+  // Automated Tap-To-Morph Touch Matrix Listener
+  useEffect(() => {
+    const handleTouch = (e: TouchEvent | PointerEvent) => {
+      // If true finger touch event on a touch/hybrid device
+      if ('pointerType' in e && e.pointerType !== 'touch') return;
+      // Fluidly switch to metro mode if currently on desktop windows shell
+      setShellMode((curr) => (curr === 'windows' ? 'metro' : curr));
+    };
+
+    window.addEventListener('touchstart', handleTouch, { passive: true });
+    window.addEventListener('pointerdown', handleTouch, { passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouch);
+      window.removeEventListener('pointerdown', handleTouch);
+    };
+  }, []);
 
   // Sliders
   const [blurAmount, setBlurAmount] = useState<number>(persistedSettings.blurAmount ?? 24);

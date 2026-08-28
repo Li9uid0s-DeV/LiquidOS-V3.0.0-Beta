@@ -261,7 +261,7 @@ export function Desktop() {
             </div>
             <button
               onClick={() => setShellMode('windows')}
-              className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-xs text-white flex items-center gap-2 transition active:scale-95"
+              className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs text-white flex items-center gap-2 transition active:scale-95"
             >
               <Icon name="Monitor" size={14} className="text-cyan-300" />
               <span>Desktop View</span>
@@ -269,7 +269,7 @@ export function Desktop() {
           </div>
 
           {/* Responsive Liquid Glass Live Tiles Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 my-auto max-w-6xl w-full mx-auto py-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 my-auto max-w-6xl w-full mx-auto py-4">
             {/* Tile 1: 3D Black Hole */}
             <div
               onClick={() => { openApp('settings'); setShellMode('windows'); }}
@@ -391,13 +391,45 @@ export function Desktop() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-white/50 font-mono shrink-0 pt-4 border-t border-white/10">
+          <div className="flex items-center justify-between text-xs text-white/50 font-mono shrink-0 pt-3">
             <div className="flex items-center gap-2">
               <AppLogo size={16} />
-              <span>LiquidOS v3.1 Touch Engine</span>
+              <span>LiquidOS v3.2 Touch Engine</span>
             </div>
-            <div>Swipe or click to launch tiles</div>
+            <div>Swipe or tap to launch tiles</div>
           </div>
+        </div>
+      )}
+
+      {/* ========================================================
+          DESKTOP ICONS GRID (Windows Mode — Ultra-High Density Minimalist)
+         ======================================================== */}
+      {shellMode === 'windows' && (
+        <div className="absolute top-4 left-4 z-10 flex flex-col flex-wrap gap-2 max-h-[calc(100vh-64px)] pointer-events-auto">
+          {[
+            { id: 'settings', label: 'Singularity OS', icon: 'Sparkles' },
+            { id: 'sysmon', label: 'System Monitor', icon: 'Activity' },
+            { id: 'explorer', label: 'File Explorer', icon: 'FolderOpen' },
+            { id: 'browser', label: 'Liquid Browser', icon: 'Globe' },
+            { id: 'terminal', label: 'Terminal', icon: 'SquareTerminal' },
+            { id: 'game', label: 'Space Runner 3D', icon: 'Gamepad2' },
+            { id: 'appstore', label: 'App Store', icon: 'Store' },
+            { id: 'synth', label: 'Synth Studio', icon: 'Music' },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => handleAppClick(item.id as AppId)}
+              className="flex flex-col items-center gap-1 w-20 p-2 rounded-xl text-white/90 hover:bg-white/10 hover:shadow-lg active:scale-95 transition group"
+              title={item.label}
+            >
+              <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/15 transition shrink-0">
+                <Icon name={item.icon} size={18} className="text-cyan-300" />
+              </div>
+              <span className="text-[11px] text-white/90 font-medium text-center truncate max-w-full px-0.5 leading-tight select-none">
+                {item.label}
+              </span>
+            </button>
+          ))}
         </div>
       )}
 

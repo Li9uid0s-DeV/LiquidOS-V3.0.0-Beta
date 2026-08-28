@@ -142,21 +142,70 @@ vec3 renderSkybox(vec3 rayDir, vec3 nebCol) {
   float starSpike2 = pow(max(0.0, abs(dot(rayDir, vec3(0.0, 1.0, 0.0)))), 80.0) * pow(starDot, 24.0) * 1.5;
   vec3 hypergiant = vec3(0.80, 0.90, 1.0) * (starCore + starCorona) + vec3(0.65, 0.85, 1.0) * (starSpike1 + starSpike2);
 
-  // 4. Gas Giant Planet with Atmospheric Rayleigh Scattering
+  // 4. Cyberpunk Gas Giant Planet with Luminescent Grid Networks & Holographic Rings
   vec3 planetDir = normalize(vec3(-3.0, -0.62, 3.4));
   float planetDot = dot(rayDir, planetDir);
-  float planetAngularSize = 0.988;
+  float planetAngularSize = 0.987;
   vec3 planetCol = vec3(0.0);
+
+  // Holographic Orbital Rings Plane (angled around planetDir)
+  vec3 ringNormal = normalize(vec3(0.35, 0.92, -0.18));
+  float denom = dot(rayDir, ringNormal);
+  if (abs(denom) > 0.001) {
+    // Project ray onto planet ring disk
+    vec3 toCenter = planetDir * 10.0;
+    float tRing = dot(toCenter, ringNormal) / denom;
+    if (tRing > 0.0) {
+      vec3 ringHit = rayDir * tRing - toCenter;
+      float ringDist = length(ringHit);
+      if (ringDist >= 0.72 && ringDist <= 2.2) {
+        // Concentric sci-fi holographic ring bands with dashed data gaps
+        float ringNormDist = (ringDist - 0.72) / (2.2 - 0.72);
+        float ringAngle = atan(ringHit.z, ringHit.x);
+        float ringRot = ringAngle + uTime * 0.08;
+        
+        // Procedural radial holographic spectral bands
+        float bands = sin(ringNormDist * 60.0) * 0.5 + 0.5;
+        bands *= sin(ringNormDist * 180.0) * 0.3 + 0.7;
+        
+        // Discrete geometric dash gaps and telemetry ticks
+        float dash1 = step(0.15, fract(ringRot * 8.0 + ringNormDist * 4.0));
+        float dash2 = step(0.08, fract(ringRot * 24.0 - ringNormDist * 12.0));
+        float dataTicks = step(0.92, sin(ringAngle * 48.0 + uTime * 0.4)) * step(0.4, sin(ringNormDist * 120.0));
+        
+        float ringAlpha = bands * dash1 * (0.6 + 0.4 * dash2) * smoothstep(0.72, 0.85, ringDist) * smoothstep(2.2, 1.95, ringDist);
+        vec3 ringNeon = mix(vec3(0.05, 0.92, 1.0), vec3(0.78, 0.12, 1.0), ringNormDist);
+        ringNeon += vec3(0.9, 1.0, 1.0) * dataTicks * 1.8;
+        
+        planetCol += ringNeon * ringAlpha * (0.85 + 0.3 * sin(uTime * 1.5 + ringAngle * 2.0));
+      }
+    }
+  }
+
   if (planetDot > planetAngularSize) {
     float pDist = (planetDot - planetAngularSize) / (1.0 - planetAngularSize);
     float pRad = sqrt(clamp(1.0 - pDist, 0.0, 1.0));
     vec3 planetNorm = normalize(rayDir - planetDir * planetDot);
     vec3 planetLightDir = normalize(vec3(0.8, 0.5, -0.6));
-    float pIllum = clamp(dot(planetNorm, planetLightDir) * 0.85 + 0.15, 0.0, 1.0);
-    float band = sin(rayDir.y * 70.0 + fbm(rayDir.xy * 16.0) * 2.8) * 0.5 + 0.5;
-    vec3 planetBase = mix(vec3(0.08, 0.20, 0.38), vec3(0.28, 0.50, 0.74), band);
+    float pLight = dot(planetNorm, planetLightDir);
+    float pIllum = clamp(pLight * 0.85 + 0.15, 0.0, 1.0);
+    
+    // Atmospheric gas layers
+    float band = sin(rayDir.y * 75.0 + fbm(rayDir.xy * 18.0) * 2.8) * 0.5 + 0.5;
+    vec3 planetBase = mix(vec3(0.06, 0.16, 0.32), vec3(0.22, 0.45, 0.72), band);
     float limb = pow(1.0 - pRad, 2.4);
-    planetCol = planetBase * pIllum * 1.8 + vec3(0.35, 0.70, 1.0) * limb * 2.2;
+    
+    // Cyberpunk Planetary Luminescent Networks across shadow terminator
+    float nightFactor = smoothstep(0.25, -0.4, pLight);
+    vec2 planetCoord = vec2(atan(planetNorm.z, planetNorm.x) * 4.0, planetNorm.y * 6.0);
+    float grid1 = step(0.92, fract(planetCoord.x * 6.0 + uTime * 0.03)) + step(0.92, fract(planetCoord.y * 6.0));
+    float grid2 = step(0.96, fract(planetCoord.x * 24.0 - uTime * 0.05)) * step(0.96, fract(planetCoord.y * 24.0));
+    float nodeCluster = pow(fbm(planetCoord * 4.0 + vec2(uTime * 0.02, 0.0)), 3.0) * 8.0;
+    
+    vec3 cyberNetwork = mix(vec3(0.0, 0.85, 1.0), vec3(1.0, 0.2, 0.8), sin(planetCoord.x * 3.0) * 0.5 + 0.5);
+    vec3 cityGlow = cyberNetwork * (grid1 * 0.6 + grid2 * 1.5 + nodeCluster) * nightFactor * 2.4;
+    
+    planetCol = planetBase * pIllum * 1.8 + vec3(0.35, 0.75, 1.0) * limb * 2.2 + cityGlow;
   }
 
   return nebula + starColor + hypergiant + planetCol;

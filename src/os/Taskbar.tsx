@@ -15,7 +15,7 @@ export function Taskbar({ onLock }: TaskbarProps) {
   const {
     windows, openApp, focusWindow, minimizeWindow, restoreWindow,
     quickSettings, toggleQuick, taskbarAlign, startOpen, setStartOpen,
-    installedApps, launchInstalledApp, setShellMode,
+    installedApps, launchInstalledApp,
   } = useOS();
   const [trayOpen, setTrayOpen] = useState(false);
   const [now, setNow] = useState(new Date());
@@ -81,45 +81,37 @@ export function Taskbar({ onLock }: TaskbarProps) {
     <>
       <StartMenu open={startOpen} onClose={() => setStartOpen(false)} startPos={startPos} />
 
-      {/* Locked Full-Width Bottom Taskbar */}
+      {/* Locked Full-Width Bottom Taskbar with 30% tighter spacing */}
       <div
-        className="fixed bottom-0 inset-x-0 h-12 w-screen z-30 liquid-glass-taskbar flex items-center justify-between px-3 select-none"
+        className="fixed bottom-0 inset-x-0 h-10 w-screen z-30 liquid-glass-taskbar flex items-center justify-between px-3 select-none"
         style={{ position: 'fixed', bottom: 0, left: 0, right: 0, width: '100vw', borderRadius: 0 }}
       >
-        {/* Left: Weather & Widgets / Spacing / Tablet Mode Switch */}
-        <div className="flex items-center gap-2 min-w-0 w-36 sm:w-44">
-          <div
-            onClick={() => setShellMode('metro')}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-white/80 hover:bg-white/10 hover:text-white transition cursor-pointer text-xs group"
-            title="Switch to Windows 8 Metro Live Tiles"
-          >
-            <Icon name="LayoutGrid" size={14} className="text-cyan-400 group-hover:scale-110 transition" />
-            <span className="font-medium text-[11px] hidden sm:inline">Tiles</span>
-          </div>
-
-          <div className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-lg text-white/70 hover:bg-white/10 hover:text-white transition cursor-pointer text-xs">
+        {/* Left: Weather & Status Widget (No Manual Toggle Buttons) */}
+        <div className="flex items-center gap-2 min-w-0 w-32 sm:w-40">
+          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-white/75 hover:bg-white/10 hover:text-white transition cursor-pointer text-xs">
             <Icon name="Sun" size={13} className="text-amber-400 shrink-0" />
             <span className="font-medium text-[11px]">21°C</span>
+            <span className="text-[10px] text-white/40 hidden sm:inline">Singularity</span>
           </div>
         </div>
 
-        {/* Center: Windows 11 Fluent Center Launcher & App Icons */}
-        <div className={`flex items-center gap-1.5 ${taskbarAlign === 'left' ? 'justify-start' : 'justify-center'} flex-1 max-w-2xl px-2`}>
+        {/* Center: Windows 11 Fluent Center Launcher & App Icons (30% more compact) */}
+        <div className={`flex items-center gap-1 ${taskbarAlign === 'left' ? 'justify-start' : 'justify-center'} flex-1 max-w-2xl px-1`}>
           {/* Start Button with Official LiquidOS Fluid Logo */}
           <button
             ref={startBtnRef}
             onClick={handleStartClick}
-            className={`h-9 w-9 rounded-xl flex items-center justify-center transition shrink-0 ${
+            className={`h-8 w-8 rounded-lg flex items-center justify-center transition shrink-0 ${
               startOpen
                 ? 'bg-white/20 shadow-inner scale-95'
                 : 'hover:bg-white/10 active:scale-95'
             }`}
             title="LiquidOS Start"
           >
-            <AppLogo size={22} glow={startOpen} />
+            <AppLogo size={18} glow={startOpen} />
           </button>
 
-          <div className="h-5 w-px bg-white/10 mx-0.5 shrink-0" />
+          <div className="h-4 w-px bg-white/10 mx-0.5 shrink-0" />
 
           {/* Built-in apps */}
           {TASKBAR_APPS.map((app) => {
@@ -130,14 +122,14 @@ export function Taskbar({ onLock }: TaskbarProps) {
               <button
                 key={app.appId}
                 onClick={() => handleAppClick(app.appId)}
-                className={`relative h-9 w-9 rounded-xl flex items-center justify-center transition shrink-0 ${
+                className={`relative h-8 w-8 rounded-lg flex items-center justify-center transition shrink-0 ${
                   anyVisible ? 'bg-white/15' : 'hover:bg-white/10 active:scale-95'
                 }`}
                 title={app.label}
               >
-                <Icon name={app.icon} size={18} className="text-white/90" />
+                <Icon name={app.icon} size={16} className="text-white/90" />
                 {active && (
-                  <span className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 h-0.5 rounded-full bg-cyan-400 transition-all ${anyVisible ? 'w-3.5' : 'w-1.5 opacity-60'}`} />
+                  <span className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 h-0.5 rounded-full bg-cyan-400 transition-all ${anyVisible ? 'w-3' : 'w-1 opacity-60'}`} />
                 )}
               </button>
             );
@@ -145,7 +137,7 @@ export function Taskbar({ onLock }: TaskbarProps) {
 
           {/* Installed custom apps */}
           {installedApps.length > 0 && (
-            <div className="h-5 w-px bg-white/10 mx-0.5 shrink-0" />
+            <div className="h-4 w-px bg-white/10 mx-0.5 shrink-0" />
           )}
           {installedApps.map((app) => {
             const wins = windows.filter((w) => w.appId === app.appId);
@@ -155,14 +147,14 @@ export function Taskbar({ onLock }: TaskbarProps) {
               <button
                 key={app.appId}
                 onClick={() => handleInstalledAppClick(app.appId)}
-                className={`relative h-9 w-9 rounded-xl flex items-center justify-center transition shrink-0 ${
+                className={`relative h-8 w-8 rounded-lg flex items-center justify-center transition shrink-0 ${
                   anyVisible ? 'bg-white/15' : 'hover:bg-white/10 active:scale-95'
                 }`}
                 title={app.name}
               >
-                <Icon name={app.icon} size={18} className="text-white/90" />
+                <Icon name={app.icon} size={16} className="text-white/90" />
                 {active && (
-                  <span className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 h-0.5 rounded-full bg-cyan-400 transition-all ${anyVisible ? 'w-3.5' : 'w-1.5 opacity-60'}`} />
+                  <span className={`absolute bottom-0.5 left-1/2 -translate-x-1/2 h-0.5 rounded-full bg-cyan-400 transition-all ${anyVisible ? 'w-3' : 'w-1 opacity-60'}`} />
                 )}
               </button>
             );
@@ -170,18 +162,17 @@ export function Taskbar({ onLock }: TaskbarProps) {
         </div>
 
         {/* Right: System Tray */}
-        <div className="flex items-center gap-1 min-w-0 w-36 sm:w-44 justify-end">
+        <div className="flex items-center gap-1 min-w-0 w-32 sm:w-40 justify-end">
           <AIAssistant onLock={onLock} />
-          <div className="h-5 w-px bg-white/10 mx-0.5 shrink-0" />
+          <div className="h-4 w-px bg-white/10 mx-0.5 shrink-0" />
           <button
             onClick={() => setTrayOpen((v) => !v)}
-            className="flex items-center gap-1.5 px-2 py-1 rounded-lg hover:bg-white/10 transition"
+            className="flex items-center gap-1.5 px-1.5 py-0.5 rounded-lg hover:bg-white/10 transition"
             title="Quick settings"
           >
             <div className="flex items-center gap-1 text-white/70">
-              <Icon name="Wifi" size={13} />
-              <Icon name={quickSettings.sound ? 'Volume2' : 'VolumeX'} size={13} />
-              <Icon name="Battery" size={13} />
+              <Icon name="Wifi" size={12} />
+              <Icon name="Battery" size={12} />
             </div>
             <div className="text-right leading-tight hidden lg:block">
               <div className="text-[11px] text-white/90 tabular-nums font-mono">{timeStr}</div>

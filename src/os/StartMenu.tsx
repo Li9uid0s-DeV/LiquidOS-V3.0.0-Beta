@@ -130,14 +130,14 @@ export function StartMenu({ open, onClose, startPos }: Props) {
   };
 
   // Position: precisely query the start button bounding box and center directly above it
-  const menuWidth = typeof window !== 'undefined' ? Math.min(540, window.innerWidth * 0.92) : 540;
+  const menuWidth = typeof window !== 'undefined' ? Math.min(520, window.innerWidth * 0.92) : 520;
   const menuLeft = startPos
     ? Math.max(12, Math.min(startPos.x + startPos.width / 2 - menuWidth / 2, (typeof window !== 'undefined' ? window.innerWidth : 1200) - menuWidth - 12))
     : (typeof window !== 'undefined' ? (window.innerWidth - menuWidth) / 2 : 12);
 
   const menuStyle: React.CSSProperties = {
     left: menuLeft,
-    bottom: 56,
+    bottom: 48,
     width: menuWidth,
   };
 
@@ -147,19 +147,19 @@ export function StartMenu({ open, onClose, startPos }: Props) {
         <>
           <div className="fixed inset-0 z-40" onClick={onClose} />
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.97 }}
+            initial={{ opacity: 0, y: 16, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.97 }}
+            exit={{ opacity: 0, y: 16, scale: 0.97 }}
             transition={{ type: 'spring', stiffness: 420, damping: 32 }}
             className="glass fixed z-50 rounded-2xl p-5"
             style={menuStyle}
           >
             {/* Header with AppLogo & OS Branding */}
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/10">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
               <div className="flex items-center gap-2.5">
-                <AppLogo size={24} glow />
+                <AppLogo size={22} glow />
                 <span className="text-sm font-semibold tracking-wide text-white/95">LiquidOS</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono">v3.1</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono">v3.2</span>
               </div>
               <div className="text-[11px] text-white/50">Gargantua Cosmic Edition</div>
             </div>
