@@ -297,13 +297,13 @@ export function SettingsApp() {
               {[
                 {
                   id: 'windows',
-                  name: 'Windows Desktop Mode',
-                  desc: 'Full-width bottom taskbar, classic/modern Start Menu, system tray.',
+                  name: 'Windows 11 Fluent Shell',
+                  desc: 'Full-width bottom taskbar, centered Start Menu, system tray.',
                   icon: 'Monitor',
                 },
                 {
                   id: 'mac',
-                  name: 'macOS Liquid Dock & Top Bar',
+                  name: 'macOS Liquid Dock & Menu',
                   desc: 'Floating magnified bottom dock with top global utility menu bar.',
                   icon: 'Apple',
                 },
@@ -312,6 +312,18 @@ export function SettingsApp() {
                   name: 'Ubuntu Linux Launcher',
                   desc: 'Flush left-aligned vertical dock sidebar with active indicator badges.',
                   icon: 'SlidersHorizontal',
+                },
+                {
+                  id: 'android',
+                  name: 'Android Material You',
+                  desc: 'Status bar, Google search pill, app grid, and gesture navigation bar.',
+                  icon: 'Smartphone',
+                },
+                {
+                  id: 'ios',
+                  name: 'iOS SpringBoard',
+                  desc: 'Dynamic Island status bar, 4x6 grid icons, bottom dock, home indicator.',
+                  icon: 'Tablet',
                 },
                 {
                   id: 'metro',

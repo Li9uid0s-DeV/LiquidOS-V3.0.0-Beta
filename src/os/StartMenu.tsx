@@ -24,9 +24,11 @@ interface SearchResult {
 const PINNED: { appId: AppId; label: string; icon: string }[] = [
   { appId: 'explorer', label: 'Explorer', icon: 'FolderOpen' },
   { appId: 'browser', label: 'Browser', icon: 'Globe' },
+  { appId: 'game', label: 'Cosmic Velocity', icon: 'Flame' },
+  { appId: 'calculator', label: 'Calculator Pro', icon: 'Calculator' },
+  { appId: 'taskmanager', label: 'Task Manager', icon: 'Cpu' },
   { appId: 'terminal', label: 'Terminal', icon: 'SquareTerminal' },
   { appId: 'notepad', label: 'Notepad', icon: 'FileText' },
-  { appId: 'game', label: 'Space Runner', icon: 'Gamepad2' },
   { appId: 'appstore', label: 'App Store', icon: 'Store' },
   { appId: 'settings', label: 'Settings', icon: 'Settings' },
 ];
@@ -49,7 +51,7 @@ function flattenFiles(
 }
 
 export function StartMenu({ open, onClose, startPos }: Props) {
-  const { openApp, installedApps, launchInstalledApp, fileSystem } = useOS();
+  const { openApp, installedApps, launchInstalledApp, fileSystem, user, lockSystem } = useOS();
   const [query, setQuery] = useState('');
 
   const allPinned = useMemo(() => {
@@ -159,9 +161,9 @@ export function StartMenu({ open, onClose, startPos }: Props) {
               <div className="flex items-center gap-2.5">
                 <AppLogo size={22} glow />
                 <span className="text-sm font-semibold tracking-wide text-white/95">LiquidOS</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono">v3.2</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono">v4.0.0</span>
               </div>
-              <div className="text-[11px] text-white/50">Gargantua Cosmic Edition</div>
+              <div className="text-[11px] text-white/50">Cosmic Liquid Edition (#glass-distortion)</div>
             </div>
 
             {/* Search */}
@@ -235,12 +237,15 @@ export function StartMenu({ open, onClose, startPos }: Props) {
                 <div className="h-8 w-8 rounded-full bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center text-white text-xs font-semibold shadow-md">
                   <Icon name="User" size={16} />
                 </div>
-                <div className="text-xs text-white/90 font-medium">Space Explorer</div>
+                <div className="text-xs text-white/90 font-medium">{user?.name || 'Administrator'}</div>
               </div>
               <button
-                onClick={onClose}
-                className="p-1.5 rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition"
-                title="Power / Close"
+                onClick={() => {
+                  onClose();
+                  lockSystem();
+                }}
+                className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition"
+                title="Lock / Sleep"
               >
                 <Icon name="Power" size={16} />
               </button>

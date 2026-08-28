@@ -8,7 +8,9 @@ export type AppId =
   | 'appstore'
   | 'sysmon'
   | 'calendar'
-  | 'synth';
+  | 'synth'
+  | 'calculator'
+  | 'taskmanager';
 
 // Custom installed apps use a string ID prefixed with 'custom:'
 export type WindowAppId = AppId | string;
@@ -40,7 +42,9 @@ export const TASKBAR_APPS: TaskbarApp[] = [
   { appId: 'browser', label: 'Liquid Browser', icon: 'Globe' },
   { appId: 'terminal', label: 'Terminal', icon: 'SquareTerminal' },
   { appId: 'notepad', label: 'Notepad', icon: 'FileText' },
-  { appId: 'game', label: '3D Games Matrix', icon: 'Gamepad2' },
+  { appId: 'calculator', label: 'Calculator Pro', icon: 'Calculator' },
+  { appId: 'taskmanager', label: 'Task Manager', icon: 'Cpu' },
+  { appId: 'game', label: '3D Arcadium Engine', icon: 'Gamepad2' },
   { appId: 'appstore', label: 'App Store', icon: 'Store' },
   { appId: 'sysmon', label: 'System Monitor', icon: 'Activity' },
   { appId: 'calendar', label: 'Calendar & Tasks', icon: 'Calendar' },
@@ -49,10 +53,20 @@ export const TASKBAR_APPS: TaskbarApp[] = [
 ];
 
 export type TaskbarAlign = 'center' | 'left';
-export type ShellMode = 'windows' | 'mac' | 'ubuntu' | 'metro';
+export type ShellMode = 'windows' | 'mac' | 'ubuntu' | 'android' | 'ios' | 'metro';
 export type WindowsTaskbarStyle = 'modern' | 'classic';
 export type DesignEngine = 'liquid-glass' | 'frosted-blur' | 'windows-mica' | 'dark-slate' | 'cyberpunk-neon';
 export type NebulaPreset = 'gargantua' | 'ultraviolet' | 'indigo' | 'cyan-quasar' | 'solar-flare';
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  timestamp: number;
+  icon: string;
+  appId?: AppId;
+  read?: boolean;
+}
 
 export interface SnapZone {
   side: 'left' | 'right' | 'top';

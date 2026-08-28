@@ -49,8 +49,15 @@ export function GlassFilters() {
   }, []);
 
   return (
-    <svg width="0" height="0" style={{ position: 'absolute', pointerEvents: 'none' }} aria-hidden>
+    <svg width="0" height="0" style={{ position: 'absolute', pointerEvents: 'none' }} aria-hidden="true">
       <defs>
+        {/* V4.0.0 Global Refraction Token */}
+        <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.009 0.009" numOctaves={2} seed={92} result="noise" />
+          <feGaussianBlur in="noise" stdDeviation="2" result="blurred" />
+          <feDisplacementMap in="SourceGraphic" in2="blurred" scale={27} xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+
         {/* Mikhail-Bespalov Liquid Glass Lens — exact SVG displacement refraction map */}
         <filter id="liquid-glass-lens" primitiveUnits="objectBoundingBox">
           <feImage

@@ -34,30 +34,32 @@ body,
    Zero Generic White Outlines — Defined solely by refraction & specular sheen
    ============================================================ */
 
-/* ===== LIQUID GLASS WINDOW ===== */
-.liquid-glass-window {
+/* ===== LIQUID GLASS WINDOW & CARDS ===== */
+.liquid-glass-window,
+.liquid-glass-card {
   position: relative;
   background: rgba(255, 255, 255, var(--theme-opacity, 0.03));
-  backdrop-filter: url(#liquid-glass-lens) blur(14px) saturate(180%);
-  -webkit-backdrop-filter: url(#liquid-glass-lens) blur(14px) saturate(180%);
+  backdrop-filter: blur(16px) saturate(190%);
+  -webkit-backdrop-filter: blur(16px) saturate(190%);
   border: none;
   border-radius: var(--theme-radius, 16px);
   box-shadow:
     0 24px 60px rgba(0, 0, 0, 0.65),
     0 4px 16px rgba(0, 0, 0, 0.4),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.14),
+    inset 0 1px 1px 0 rgba(255, 255, 255, 0.1),
     inset 0 -1px 2px 0 rgba(0, 0, 0, 0.35);
   isolation: isolate;
-  transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s ease;
 }
 
 /* Focused Window Sheen & Refractive Aura */
-.liquid-glass-window.is-focused {
+.liquid-glass-window.is-focused,
+.liquid-glass-card.is-focused {
   box-shadow:
     0 28px 70px rgba(0, 0, 0, 0.75),
     0 8px 24px rgba(0, 0, 0, 0.5),
     0 0 36px rgba(56, 189, 248, 0.12),
-    inset 0 1px 2px 0 rgba(255, 255, 255, 0.2),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.15),
     inset 0 -1px 3px 0 rgba(0, 0, 0, 0.45);
 }
 
@@ -68,32 +70,28 @@ body,
   box-shadow: 0 32px 80px rgba(0, 0, 0, 0.8);
 }
 
-/* Glossy specular top sheen */
-.liquid-glass-window::before {
+/* Clear Specular Edge with V4.0.0 Refraction Tokens */
+.liquid-glass-window::before,
+.liquid-glass-card::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(
-    145deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0.03) 22%,
-    rgba(255, 255, 255, 0.0) 45%,
-    rgba(255, 255, 255, 0.0) 70%,
-    rgba(255, 255, 255, 0.04) 100%
-  );
+  box-shadow: inset 0 0 47px -45px rgba(255, 255, 255, 0.7);
+  background-color: rgba(255, 255, 255, 0);
   pointer-events: none;
   z-index: 1;
-  mix-blend-mode: overlay;
 }
 
-/* Inner viscous edge refraction */
-.liquid-glass-window::after {
+/* Inner viscous organic flow refraction */
+.liquid-glass-window::after,
+.liquid-glass-card::after {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.1), inset 0 -1px 2px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(3px);
+  filter: url(#glass-distortion);
   pointer-events: none;
   z-index: 1;
 }

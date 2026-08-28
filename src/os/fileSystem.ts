@@ -35,8 +35,8 @@ const initial: VirtualFolder = {
       name: 'Documents',
       kind: 'folder',
       children: [
-        txt('doc-welcome', 'Welcome.txt', 'Welcome to Liquid OS!\n\nThis is a fully simulated desktop environment built with React + Liquid Glass UI.\nTry the Terminal, Browser, and File Explorer apps.\n\nEnjoy the glassmorphism!'),
-        txt('doc-notes', 'Notes.txt', 'Project notes:\n- Build window manager\n- Add draggable windows\n- Implement glass UI\n- Add taskbar & start menu'),
+        txt('doc-welcome', 'Welcome.txt', 'Welcome to LiquidOS v4.0.0!\n\nThis is a high-density Web OS engineered with dynamic Liquid Glass optical refraction (#glass-distortion) and multi-shell architecture.\n\nEnjoy the cosmic performance and zero-latency simulation!'),
+        txt('doc-notes', 'SystemNotes.txt', 'v4.0.0 Architecture Highlights:\n- True Liquid Glass Refraction (#glass-distortion)\n- 5 Multi-OS Shell Environments (Windows 11, macOS, Ubuntu, Android, iOS)\n- Windows 8 Metro Live Touch Matrix\n- Cosmic Velocity 3D Arcadium Engine\n- Calculator Pro & System Task Manager\n- Offline-First LocalStorage Daemon'),
       ],
     },
     {
@@ -45,8 +45,8 @@ const initial: VirtualFolder = {
       kind: 'folder',
       children: [
         img('pic-1', 'Aurora.jpg', 'https://images.pexels.com/photos/1933239/pexels-photo-1933239.jpeg?auto=compress&cs=tinysrgb&w=1200'),
-        img('pic-2', 'Mountains.jpg', 'https://images.pexels.com/photos/417074/pexels-photo-417074.jpeg?auto=compress&cs=tinysrgb&w=1200'),
-        img('pic-3', 'Ocean.jpg', 'https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=1200'),
+        img('pic-2', 'CosmicNebula.jpg', 'https://images.pexels.com/photos/2150/sky-space-dark-galaxy.jpg?auto=compress&cs=tinysrgb&w=1200'),
+        img('pic-3', 'Oasis.jpg', 'https://images.pexels.com/photos/1032650/pexels-photo-1032650.jpeg?auto=compress&cs=tinysrgb&w=1200'),
       ],
     },
     {
@@ -54,7 +54,15 @@ const initial: VirtualFolder = {
       name: 'Downloads',
       kind: 'folder',
       children: [
-        txt('dl-readme', 'README.txt', 'Downloads folder. Files you save from Notepad will appear here by default.'),
+        txt('dl-readme', 'README.txt', 'Downloads folder. Files you save from Notepad or download from App Store will appear here.'),
+      ],
+    },
+    {
+      id: 'trash',
+      name: 'Recycle Bin',
+      kind: 'folder',
+      children: [
+        txt('trash-old-cache', 'deprecated_cache.log', 'Old v3.0.0 cache file staged for automatic purge.'),
       ],
     },
   ],

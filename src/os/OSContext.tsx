@@ -20,6 +20,7 @@ import {
   STORE_CATALOG,
   CalendarTask,
   UserProfile,
+  NotificationItem,
 } from './types';
 import { VirtualFolder, getInitialFileSystem, VirtualNode } from './fileSystem';
 
@@ -49,7 +50,7 @@ export interface OpenOptions {
   icon?: string;
 }
 
-interface OSContextValue {
+export interface OSContextValue {
   windows: WindowState[];
   openApp: (appId: AppId, opts?: OpenOptions) => void;
   closeWindow: (id: string) => void;
@@ -65,6 +66,9 @@ interface OSContextValue {
   createFolder: (path: string[], folderName: string) => void;
   deleteNode: (path: string[], nodeName: string) => void;
   openFileNode: (node: VirtualNode) => void;
+  recycleFile: (path: string[], nodeName: string) => void;
+  emptyRecycleBin: () => void;
+  restoreRecycleFile: (nodeName: string) => void;
 
   wallpaper: Wallpaper;
   setWallpaper: (w: Wallpaper) => void;
@@ -97,6 +101,25 @@ interface OSContextValue {
 
   quickSettings: { wifi: boolean; bluetooth: boolean; darkMode: boolean };
   toggleQuick: (key: 'wifi' | 'bluetooth' | 'darkMode') => void;
+
+  // Android & iOS Mobile Quick Controls
+  androidQuickSettings: {
+    wifi: boolean;
+    bluetooth: boolean;
+    flashlight: boolean;
+    airplane: boolean;
+    batterySaver: boolean;
+    doNotDisturb: boolean;
+  };
+  toggleAndroidQuick: (key: 'wifi' | 'bluetooth' | 'flashlight' | 'airplane' | 'batterySaver' | 'doNotDisturb') => void;
+  volume: number;
+  setVolume: (v: number) => void;
+  brightness: number;
+  setBrightness: (v: number) => void;
+
+  // Dynamic Island
+  dynamicIslandEvent: { title: string; subtitle?: string; icon?: string } | null;
+  triggerDynamicIsland: (title: string, subtitle?: string, icon?: string) => void;
 
   liteMode: boolean;
   setLiteMode: (v: boolean) => void;
@@ -132,6 +155,22 @@ interface OSContextValue {
   showWelcome: boolean;
   setWelcome: (v: boolean) => void;
 
+  // Notification Center
+  notifications: NotificationItem[];
+  addNotification: (n: Omit<NotificationItem, 'id' | 'timestamp'>) => void;
+  clearNotifications: () => void;
+  dismissNotification: (id: string) => void;
+
+  // System Flyouts
+  widgetsOpen: boolean;
+  toggleWidgets: () => void;
+  copilotOpen: boolean;
+  toggleCopilot: () => void;
+  controlCenterOpen: boolean;
+  toggleControlCenter: () => void;
+  launchpadOpen: boolean;
+  toggleLaunchpad: () => void;
+
   // Sound effects
   playSound: (type: 'open' | 'click' | 'lock' | 'notify') => void;
 }
@@ -144,8 +183,10 @@ const APP_DEFAULTS: Record<AppId, { title: string; icon: string; width: number; 
   terminal: { title: 'Terminal', icon: 'SquareTerminal', width: 700, height: 450 },
   settings: { title: 'Settings', icon: 'Settings', width: 780, height: 560 },
   notepad: { title: 'Notepad', icon: 'FileText', width: 640, height: 500 },
-  game: { title: '3D Games Matrix', icon: 'Gamepad2', width: 840, height: 580 },
+  game: { title: 'Cosmic Velocity 3D', icon: 'Flame', width: 880, height: 590 },
   appstore: { title: 'App Store', icon: 'Store', width: 850, height: 610 },
+  calculator: { title: 'Calculator Pro', icon: 'Calculator', width: 380, height: 540 },
+  taskmanager: { title: 'Task Manager', icon: 'Cpu', width: 740, height: 510 },
   sysmon: { title: 'System Monitor', icon: 'Activity', width: 740, height: 520 },
   calendar: { title: 'Calendar & Tasks', icon: 'Calendar', width: 820, height: 550 },
   synth: { title: 'Translucent Synth', icon: 'Music', width: 760, height: 500 },
@@ -275,9 +316,96 @@ export function OSProvider({ children }: { children: ReactNode }) {
     loadPersisted<CalendarTask[]>(LS_TASKS_KEY, INITIAL_TASKS)
   );
 
+  // Dynamic Island state & trigger
+  const [dynamicIslandEvent, setDynamicIslandEvent] = useState<{ title: string; subtitle?: string; icon?: string } | null>(null);
+  const dynamicIslandTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerDynamicIsland = useCallback((title: string, subtitle?: string, icon?: string) => {
+    setDynamicIslandEvent({ title, subtitle, icon });
+    if (dynamicIslandTimer.current) clearTimeout(dynamicIslandTimer.current);
+    dynamicIslandTimer.current = setTimeout(() => {
+      setDynamicIslandEvent(null);
+    }, 4000);
+  }, []);
+
+  // Android Quick Settings & Mobile Controls
+  const [androidQuickSettings, setAndroidQuickSettings] = useState({
+    wifi: true,
+    bluetooth: false,
+    flashlight: false,
+    airplane: false,
+    batterySaver: false,
+    doNotDisturb: false,
+  });
+  const [volume, setVolume] = useState(80);
+  const [brightness, setBrightness] = useState(90);
+
+  const toggleAndroidQuick = useCallback((key: 'wifi' | 'bluetooth' | 'flashlight' | 'airplane' | 'batterySaver' | 'doNotDisturb') => {
+    setAndroidQuickSettings((prev) => {
+      const next = { ...prev, [key]: !prev[key] };
+      triggerDynamicIsland(`${key.toUpperCase()} ${next[key] ? 'Enabled' : 'Disabled'}`, 'Android Quick Settings', 'SlidersHorizontal');
+      return next;
+    });
+  }, [triggerDynamicIsland]);
+
   const [locked, setLocked] = useState(false);
   const [user, setUserState] = useState<UserProfile | null>(persistedSettings.user ?? null);
   const [showWelcome, setWelcome] = useState(false);
+
+  // Notifications State & Initial Seed
+  const [notifications, setNotifications] = useState<NotificationItem[]>(() => [
+    {
+      id: 'notif-welcome',
+      title: 'LiquidOS v4.0.0 Online',
+      message: 'System upgraded to Liquid Glass (#glass-distortion) with 5 multi-OS shells.',
+      time: 'Just now',
+      app: 'Liquid Core',
+      icon: 'Sparkles',
+      unread: true,
+      timestamp: Date.now(),
+    },
+    {
+      id: 'notif-driver',
+      title: 'Display Compositor Calibrated',
+      message: 'High-density refractive lens active with 60 FPS hardware acceleration.',
+      time: '2 mins ago',
+      app: 'Settings',
+      icon: 'Layers',
+      unread: false,
+      timestamp: Date.now() - 120000,
+    },
+  ]);
+
+  const addNotification = useCallback((n: Omit<NotificationItem, 'id' | 'timestamp'>) => {
+    const newNotif: NotificationItem = {
+      ...n,
+      id: 'notif-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      timestamp: Date.now(),
+      unread: true,
+    };
+    setNotifications((prev) => [newNotif, ...prev]);
+  }, []);
+
+  const dismissNotification = useCallback((id: string) => {
+    setNotifications((prev) => prev.filter((item) => item.id !== id));
+  }, []);
+
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
+  }, []);
+
+  // System Flyouts State
+  const [widgetsOpen, setWidgetsOpen] = useState(false);
+  const toggleWidgets = useCallback(() => setWidgetsOpen((v) => !v), []);
+
+  const [copilotOpen, setCopilotOpen] = useState(false);
+  const toggleCopilot = useCallback(() => setCopilotOpen((v) => !v), []);
+
+  const [controlCenterOpen, setControlCenterOpen] = useState(false);
+  const toggleControlCenter = useCallback(() => setControlCenterOpen((v) => !v), []);
+
+  const [launchpadOpen, setLaunchpadOpen] = useState(false);
+  const toggleLaunchpad = useCallback(() => setLaunchpadOpen((v) => !v), []);
 
   // Sync CSS variables with custom slider values
   useEffect(() => {
@@ -616,6 +744,64 @@ export function OSProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const recycleFile = useCallback((path: string[], nodeName: string) => {
+    setFileSystem((fs) => {
+      const clone: VirtualFolder = JSON.parse(JSON.stringify(fs));
+      let folder = clone;
+      for (const seg of path) {
+        const next = folder.children.find((c) => c.name === seg && c.kind === 'folder');
+        if (!next || next.kind !== 'folder') return fs;
+        folder = next;
+      }
+      const targetIdx = folder.children.findIndex((c) => c.name === nodeName);
+      if (targetIdx === -1) return fs;
+      const [item] = folder.children.splice(targetIdx, 1);
+
+      // Find or create recycle bin folder in root
+      let trashFolder = clone.children.find((c) => c.id === 'trash' || c.name.toLowerCase().includes('recycle') || c.name.toLowerCase().includes('trash'));
+      if (!trashFolder || trashFolder.kind !== 'folder') {
+        trashFolder = { id: 'trash', name: 'Recycle Bin', kind: 'folder', children: [] };
+        clone.children.push(trashFolder);
+      }
+      (trashFolder as VirtualFolder).children.push(item);
+      return clone;
+    });
+    playSound('notify');
+  }, [playSound]);
+
+  const emptyRecycleBin = useCallback(() => {
+    setFileSystem((fs) => {
+      const clone: VirtualFolder = JSON.parse(JSON.stringify(fs));
+      const trashFolder = clone.children.find((c) => c.id === 'trash' || c.name.toLowerCase().includes('recycle') || c.name.toLowerCase().includes('trash'));
+      if (trashFolder && trashFolder.kind === 'folder') {
+        trashFolder.children = [];
+      }
+      return clone;
+    });
+    playSound('click');
+  }, [playSound]);
+
+  const restoreRecycleFile = useCallback((nodeName: string) => {
+    setFileSystem((fs) => {
+      const clone: VirtualFolder = JSON.parse(JSON.stringify(fs));
+      const trashFolder = clone.children.find((c) => c.id === 'trash' || c.name.toLowerCase().includes('recycle') || c.name.toLowerCase().includes('trash'));
+      if (!trashFolder || trashFolder.kind !== 'folder') return fs;
+      const targetIdx = trashFolder.children.findIndex((c) => c.name === nodeName);
+      if (targetIdx === -1) return fs;
+      const [item] = trashFolder.children.splice(targetIdx, 1);
+
+      // Restore into Documents or root
+      const docsFolder = clone.children.find((c) => c.id === 'documents' || c.name === 'Documents');
+      if (docsFolder && docsFolder.kind === 'folder') {
+        docsFolder.children.push(item);
+      } else {
+        clone.children.push(item);
+      }
+      return clone;
+    });
+    playSound('open');
+  }, [playSound]);
+
   const openFileNode = useCallback(
     (node: VirtualNode) => {
       if (node.kind === 'folder') {
@@ -773,6 +959,9 @@ export function OSProvider({ children }: { children: ReactNode }) {
     createFolder,
     deleteNode,
     openFileNode,
+    recycleFile,
+    emptyRecycleBin,
+    restoreRecycleFile,
     wallpaper,
     setWallpaper,
     customWallpapers,
@@ -799,6 +988,14 @@ export function OSProvider({ children }: { children: ReactNode }) {
     setAnimSpeed,
     quickSettings,
     toggleQuick,
+    androidQuickSettings,
+    toggleAndroidQuick,
+    volume,
+    setVolume,
+    brightness,
+    setBrightness,
+    dynamicIslandEvent,
+    triggerDynamicIsland,
     liteMode,
     setLiteMode,
     taskbarAlign,
@@ -823,6 +1020,18 @@ export function OSProvider({ children }: { children: ReactNode }) {
     setUser,
     showWelcome,
     setWelcome,
+    notifications,
+    addNotification,
+    clearNotifications,
+    dismissNotification,
+    widgetsOpen,
+    toggleWidgets,
+    copilotOpen,
+    toggleCopilot,
+    controlCenterOpen,
+    toggleControlCenter,
+    launchpadOpen,
+    toggleLaunchpad,
     playSound,
   };
 

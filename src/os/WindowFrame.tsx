@@ -68,10 +68,13 @@ function getSnapPresets(vw: number, vh: number): SnapPreset[] {
 }
 
 export function WindowFrame({ win, children }: Props) {
-  const { focusWindow, closeWindow, minimizeWindow, toggleMaximize, updateWindowRect } = useOS();
+  const {
+    focusWindow, closeWindow, minimizeWindow, toggleMaximize, updateWindowRect, shellMode,
+  } = useOS();
   const [dragging, setDragging] = useState(false);
   const [snapZone, setSnapZone] = useState<SnapZone | null>(null);
   const [showSnapLayout, setShowSnapLayout] = useState(false);
+  const [metroHoverHeader, setMetroHoverHeader] = useState(false);
   const snapHoverTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const dragState = useRef<{
     mode: 'move' | 'resize';
@@ -135,7 +138,7 @@ export function WindowFrame({ win, children }: Props) {
   }, [win.id, win.x, win.y, updateWindowRect, toggleMaximize, onPointerMove]);
 
   const startDrag = (e: React.PointerEvent) => {
-    if (win.maximized) return;
+    if (win.maximized || shellMode === 'metro') return;
     focusWindow(win.id);
     setDragging(true);
     dragState.current = { mode: 'move', startX: e.clientX, startY: e.clientY, origX: win.x, origY: win.y, origW: win.width, origH: win.height };
@@ -145,7 +148,7 @@ export function WindowFrame({ win, children }: Props) {
 
   const startResize = (e: React.PointerEvent, dir: string) => {
     e.stopPropagation();
-    if (win.maximized) return;
+    if (win.maximized || shellMode === 'metro') return;
     focusWindow(win.id);
     dragState.current = { mode: 'resize', dir, startX: e.clientX, startY: e.clientY, origX: win.x, origY: win.y, origW: win.width, origH: win.height };
     window.addEventListener('pointermove', onPointerMove);
@@ -178,8 +181,12 @@ export function WindowFrame({ win, children }: Props) {
 
   if (win.minimized) return null;
 
-  const isMax = win.maximized;
-  const style: React.CSSProperties = isMax
+  const isMetro = shellMode === 'metro';
+  const isMax = win.maximized || isMetro;
+  
+  const style: React.CSSProperties = isMetro
+    ? { left: 0, top: 0, width: '100vw', height: '100vh', zIndex: win.zIndex, borderRadius: 0 }
+    : isMax
     ? { left: 0, top: 0, width: window.innerWidth, height: window.innerHeight - TASKBAR_H, zIndex: win.zIndex, transform: undefined }
     : { left: win.x, top: win.y, width: win.width, height: win.height, zIndex: win.zIndex, transform: undefined };
 
@@ -192,89 +199,187 @@ export function WindowFrame({ win, children }: Props) {
       )}
 
       <motion.div
-        className={`liquid-glass-window absolute flex flex-col rounded-xl overflow-hidden select-none ${dragging ? 'is-dragging window-dragging' : ''}`}
+        className={`liquid-glass-window absolute flex flex-col ${isMetro ? 'rounded-none' : 'rounded-xl'} overflow-hidden select-none ${dragging ? 'is-dragging window-dragging' : ''}`}
         style={style}
-        initial={{ opacity: 0, scale: 0.96 }}
+        initial={{ opacity: 0, scale: isMetro ? 1 : 0.96 }}
         animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.96 }}
+        exit={{ opacity: 0, scale: isMetro ? 1 : 0.96 }}
         transition={{ type: 'spring', stiffness: 380, damping: 28 }}
         onPointerDown={() => focusWindow(win.id)}
       >
-        {/* Title bar — z:10 so it sits above the ::before/::after glass layers */}
-        <div
-          className="flex h-9 items-center justify-between pl-3 pr-0 select-none shrink-0 cursor-default relative z-10"
-          onPointerDown={startDrag}
-          onDoubleClick={() => toggleMaximize(win.id)}
-        >
-          <div className="flex items-center gap-2 text-xs text-white/80 pointer-events-none">
-            <Icon name={win.icon} size={14} className="text-brand-300" />
-            <span className="font-medium">{win.title}</span>
+        {/* ========================================================
+            1. METRO IMMERSIVE TOP HOVER REVEAL BAR
+           ======================================================== */}
+        {isMetro && (
+          <div
+            className="absolute top-0 inset-x-0 h-10 z-50 pointer-events-auto"
+            onMouseEnter={() => setMetroHoverHeader(true)}
+            onMouseLeave={() => setMetroHoverHeader(false)}
+          >
+            <motion.div
+              initial={false}
+              animate={{ y: metroHoverHeader ? 0 : -40, opacity: metroHoverHeader ? 1 : 0 }}
+              transition={{ duration: 0.2 }}
+              className="h-10 bg-black/80 backdrop-blur-xl border-b border-white/10 px-4 flex items-center justify-between text-white shadow-2xl"
+            >
+              <div className="flex items-center gap-2 text-xs text-white/90">
+                <Icon name={win.icon} size={15} className="text-cyan-300" />
+                <span className="font-medium">{win.title}</span>
+                <span className="text-[10px] text-white/40 font-mono">Full-Screen Metro</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => minimizeWindow(win.id)}
+                  className="px-2 py-1 rounded bg-white/10 hover:bg-white/20 text-xs text-white/80 transition"
+                >
+                  <Icon name="Minus" size={13} />
+                </button>
+                <button
+                  onClick={() => closeWindow(win.id)}
+                  className="px-2.5 py-1 rounded bg-rose-500/80 hover:bg-rose-600 text-xs text-white transition flex items-center gap-1"
+                >
+                  <Icon name="X" size={13} />
+                  <span>Close</span>
+                </button>
+              </div>
+            </motion.div>
           </div>
+        )}
 
-          {/* Window controls — z:50, relative, pointer-events:auto so they always receive clicks */}
-          <div className="flex items-center relative z-50 pointer-events-auto">
-            <button
-              className="win-control text-white/80"
-              onClick={(e) => { e.stopPropagation(); minimizeWindow(win.id); }}
-              title="Minimize"
-            >
-              <Icon name="Minus" size={16} />
-            </button>
-            <div
-              className="relative"
-              onMouseEnter={handleMaximizeHoverEnter}
-              onMouseLeave={handleMaximizeHoverLeave}
-            >
-              <button
-                className="win-control text-white/80"
-                onClick={(e) => { e.stopPropagation(); toggleMaximize(win.id); }}
-                title="Maximize"
-              >
-                {isMax ? <Icon name="Maximize2" size={13} /> : <Icon name="Maximize" size={14} />}
-              </button>
+        {/* ========================================================
+            2. STANDARD DESKTOP TITLE BAR (Shell-Aware Controls)
+           ======================================================== */}
+        {!isMetro && (
+          <div
+            className="flex h-9 items-center justify-between pl-3 pr-0 select-none shrink-0 cursor-default relative z-10"
+            onPointerDown={startDrag}
+            onDoubleClick={() => toggleMaximize(win.id)}
+          >
+            {/* MAC OS: Top-Left 3 Fluid Glossy Beads */}
+            {shellMode === 'mac' ? (
+              <div className="flex items-center gap-2 relative z-50 pointer-events-auto">
+                <button
+                  className="h-3 w-3 rounded-full bg-[#FF5F56] border border-black/20 hover:opacity-80 transition flex items-center justify-center text-[8px] text-black/60 group"
+                  onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}
+                  title="Close"
+                >
+                  <span className="opacity-0 group-hover:opacity-100 font-bold">×</span>
+                </button>
+                <button
+                  className="h-3 w-3 rounded-full bg-[#FFBD2E] border border-black/20 hover:opacity-80 transition flex items-center justify-center text-[8px] text-black/60 group"
+                  onClick={(e) => { e.stopPropagation(); minimizeWindow(win.id); }}
+                  title="Minimize"
+                >
+                  <span className="opacity-0 group-hover:opacity-100 font-bold">-</span>
+                </button>
+                <button
+                  className="h-3 w-3 rounded-full bg-[#27C93F] border border-black/20 hover:opacity-80 transition flex items-center justify-center text-[8px] text-black/60 group"
+                  onClick={(e) => { e.stopPropagation(); toggleMaximize(win.id); }}
+                  title="Maximize"
+                >
+                  <span className="opacity-0 group-hover:opacity-100 font-bold">+</span>
+                </button>
+              </div>
+            ) : null}
 
-              {/* Snap layout popover */}
-              {showSnapLayout && (
-                <div className="snap-layout-popover right-0 top-8" onMouseEnter={handleMaximizeHoverEnter} onMouseLeave={handleMaximizeHoverLeave}>
-                  {presets.map((preset) => (
-                    <div key={preset.id} className="snap-layout-option" style={{ gridTemplateColumns: `repeat(${preset.zones.length}, 1fr)` }}>
-                      {preset.zones.map((zone, i) => {
-                        const aspectH = zone.height / (window.innerHeight - TASKBAR_H - SNAP_GAP * 1.5);
-                        return (
-                          <button
-                            key={i}
-                            className="snap-zone-mini"
-                            style={{ width: Math.max(16, 60 / preset.zones.length), height: 36 * aspectH }}
-                            onClick={(e) => { e.stopPropagation(); applySnapPreset(preset, i); }}
-                            title={`${preset.label} — zone ${i + 1}`}
-                          />
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              )}
+            {/* Window Icon & Title */}
+            <div className={`flex items-center gap-2 text-xs text-white/80 pointer-events-none ${shellMode === 'mac' ? 'mx-auto' : ''}`}>
+              <Icon name={win.icon} size={14} className="text-cyan-300" />
+              <span className="font-medium">{win.title}</span>
             </div>
-            <button
-              className="win-control close text-white/80"
-              onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}
-              title="Close"
-            >
-              <Icon name="X" size={16} />
-            </button>
-          </div>
-        </div>
 
-        {/* Content — z:10 so it sits above the glass visual layers but below controls */}
+            {/* UBUNTU: Dark Round Industrial Circles */}
+            {shellMode === 'ubuntu' ? (
+              <div className="flex items-center gap-1.5 pr-2 relative z-50 pointer-events-auto">
+                <button
+                  className="h-5 w-5 rounded-full bg-white/10 hover:bg-white/25 text-white/80 flex items-center justify-center transition"
+                  onClick={(e) => { e.stopPropagation(); minimizeWindow(win.id); }}
+                  title="Minimize"
+                >
+                  <Icon name="Minus" size={10} />
+                </button>
+                <button
+                  className="h-5 w-5 rounded-full bg-white/10 hover:bg-white/25 text-white/80 flex items-center justify-center transition"
+                  onClick={(e) => { e.stopPropagation(); toggleMaximize(win.id); }}
+                  title="Maximize"
+                >
+                  <Icon name="Maximize" size={10} />
+                </button>
+                <button
+                  className="h-5 w-5 rounded-full bg-orange-600/80 hover:bg-orange-600 text-white flex items-center justify-center transition"
+                  onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}
+                  title="Close"
+                >
+                  <Icon name="X" size={10} />
+                </button>
+              </div>
+            ) : shellMode !== 'mac' ? (
+              /* WINDOWS 11 / DEFAULT: Fluent Micro-Icons on Top Right */
+              <div className="flex items-center relative z-50 pointer-events-auto">
+                <button
+                  className="win-control text-white/80 hover:bg-white/10 transition px-3 py-1.5"
+                  onClick={(e) => { e.stopPropagation(); minimizeWindow(win.id); }}
+                  title="Minimize"
+                >
+                  <Icon name="Minus" size={14} />
+                </button>
+                <div
+                  className="relative"
+                  onMouseEnter={handleMaximizeHoverEnter}
+                  onMouseLeave={handleMaximizeHoverLeave}
+                >
+                  <button
+                    className="win-control text-white/80 hover:bg-white/10 transition px-3 py-1.5"
+                    onClick={(e) => { e.stopPropagation(); toggleMaximize(win.id); }}
+                    title="Maximize"
+                  >
+                    {isMax ? <Icon name="Maximize2" size={12} /> : <Icon name="Maximize" size={13} />}
+                  </button>
+
+                  {/* Snap layout popover */}
+                  {showSnapLayout && (
+                    <div className="snap-layout-popover right-0 top-8" onMouseEnter={handleMaximizeHoverEnter} onMouseLeave={handleMaximizeHoverLeave}>
+                      {presets.map((preset) => (
+                        <div key={preset.id} className="snap-layout-option" style={{ gridTemplateColumns: `repeat(${preset.zones.length}, 1fr)` }}>
+                          {preset.zones.map((zone, i) => {
+                            const aspectH = zone.height / (window.innerHeight - TASKBAR_H - SNAP_GAP * 1.5);
+                            return (
+                              <button
+                                key={i}
+                                className="snap-zone-mini"
+                                style={{ width: Math.max(16, 60 / preset.zones.length), height: 36 * aspectH }}
+                                onClick={(e) => { e.stopPropagation(); applySnapPreset(preset, i); }}
+                                title={`${preset.label} — zone ${i + 1}`}
+                              />
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <button
+                  className="win-control close text-white/80 hover:bg-rose-600 hover:text-white transition px-3 py-1.5"
+                  onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}
+                  title="Close"
+                >
+                  <Icon name="X" size={14} />
+                </button>
+              </div>
+            ) : null}
+          </div>
+        )}
+
+        {/* Content — segregated z-index: 10 layer with strict pointer-events: auto */}
         <div
-          className="flex-1 min-h-0 min-w-0 w-full h-full overflow-hidden relative select-none z-10"
+          className="flex-1 min-h-0 min-w-0 w-full h-full overflow-hidden relative select-none z-10 pointer-events-auto"
           style={{ contain: 'layout style paint' }}
         >
           {children}
         </div>
 
         {/* Resize handles — z:20 */}
-        {!isMax && (
+        {!isMax && !isMetro && (
           <>
             <div className="absolute left-2 top-0 right-2 h-1 cursor-n-resize z-20" onPointerDown={(e) => startResize(e, 'n')} />
             <div className="absolute left-2 bottom-0 right-2 h-1 cursor-s-resize z-20" onPointerDown={(e) => startResize(e, 's')} />

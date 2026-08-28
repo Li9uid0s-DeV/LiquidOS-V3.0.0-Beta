@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useOS } from './OSContext';
 import { Icon } from './Icon';
-import { AppId } from './types';
 
 export interface AISuggestion {
   id: string;
@@ -19,20 +18,24 @@ interface UsageEvent {
   action: 'open' | 'close' | 'focus' | 'snap';
 }
 
-interface AIAssistantProps {
-  onLock?: () => void;
-}
-
-export function AIAssistant({ onLock }: AIAssistantProps) {
+export function AIAssistant() {
   const {
-    windows, openApp, updateWindowRect,
+    windows, openApp, updateWindowRect, closeWindow, setTheme, setShellMode,
   } = useOS();
 
   const [expanded, setExpanded] = useState(false);
   const [suggestions, setSuggestions] = useState<AISuggestion[]>([]);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
+  const [chatInput, setChatInput] = useState('');
+  const [chatMessages, setChatMessages] = useState<Array<{ sender: 'ai' | 'user'; text: string; action?: () => void; actionLabel?: string }>>([
+    {
+      sender: 'ai',
+      text: 'Hello! I am LiquidOS Copilot. Ask me to snap windows, open apps, change themes, or analyze active tasks.',
+    },
+  ]);
   const usageLog = useRef<UsageEvent[]>([]);
   const lastOpenTime = useRef<Record<string, number>>({});
+  const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Track window open events
   useEffect(() => {
@@ -51,10 +54,97 @@ export function AIAssistant({ onLock }: AIAssistantProps) {
     }
   }, [windows]);
 
+  // Auto-scroll chat
+  useEffect(() => {
+    if (expanded) {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, expanded]);
+
+  // Handle Copilot Chat Submission with context-aware responses and macros
+  const handleChatSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+    const query = chatInput.trim().toLowerCase();
+    const userMsg = chatInput.trim();
+    setChatInput('');
+    setChatMessages((prev) => [...prev, { sender: 'user', text: userMsg }]);
+
+    setTimeout(() => {
+      let aiText = '';
+      let macroAction: (() => void) | undefined;
+      let macroLabel: string | undefined;
+
+      const activeWinsList = windows.filter((w) => !w.minimized).map((w) => w.title).join(', ');
+
+      if (query.includes('snap') || query.includes('split') || query.includes('tile')) {
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const TASKBAR_H = 56;
+        const GAP = 8;
+        const nonMin = windows.filter((w) => !w.minimized);
+        if (nonMin.length >= 2) {
+          macroAction = () => {
+            updateWindowRect(nonMin[0].id, { x: GAP, y: GAP, width: vw / 2 - GAP * 1.5, height: vh - TASKBAR_H - GAP * 1.5 });
+            updateWindowRect(nonMin[1].id, { x: vw / 2 + GAP * 0.5, y: GAP, width: vw / 2 - GAP * 1.5, height: vh - TASKBAR_H - GAP * 1.5 });
+          };
+          macroLabel = 'Split 50/50';
+          aiText = `I have staged a side-by-side snap for "${nonMin[0].title}" and "${nonMin[1].title}".`;
+        } else {
+          aiText = `You currently have ${nonMin.length} active window(s). Open another app to snap side by side!`;
+        }
+      } else if (query.includes('terminal') || query.includes('cli') || query.includes('cmd')) {
+        aiText = 'Opening Liquid Terminal CLI with full command suite.';
+        macroAction = () => openApp('terminal');
+        macroLabel = 'Launch Terminal';
+      } else if (query.includes('calc') || query.includes('calculator') || query.includes('math')) {
+        aiText = 'Opening Calculator Pro with scientific memory registers.';
+        macroAction = () => openApp('calculator');
+        macroLabel = 'Launch Calculator';
+      } else if (query.includes('task') || query.includes('process') || query.includes('kill') || query.includes('perf')) {
+        aiText = 'Opening Task Manager to inspect live process telemetry and RAM.';
+        macroAction = () => openApp('taskmanager');
+        macroLabel = 'Launch Task Manager';
+      } else if (query.includes('game') || query.includes('race') || query.includes('cosmic') || query.includes('3d')) {
+        aiText = 'Opening Cosmic Velocity 3D arcade racer in Three.js!';
+        macroAction = () => openApp('game');
+        macroLabel = 'Play Cosmic Velocity';
+      } else if (query.includes('dark') || query.includes('light') || query.includes('theme')) {
+        aiText = 'Toggling system visual theme mode.';
+        macroAction = () => setTheme(query.includes('light') ? 'light' : 'dark');
+        macroLabel = 'Apply Theme';
+      } else if (query.includes('metro') || query.includes('windows 8') || query.includes('touch')) {
+        aiText = 'Switching workspace shell to Windows 8 Metro Live Tiles Matrix.';
+        macroAction = () => setShellMode('metro');
+        macroLabel = 'Switch to Metro';
+      } else if (query.includes('mac') || query.includes('apple') || query.includes('dock')) {
+        aiText = 'Switching workspace shell to macOS Liquid Dock & Top Menu Bar.';
+        macroAction = () => setShellMode('mac');
+        macroLabel = 'Switch to macOS';
+      } else if (query.includes('ubuntu') || query.includes('linux')) {
+        aiText = 'Switching workspace shell to Ubuntu Linux side launcher.';
+        macroAction = () => setShellMode('ubuntu');
+        macroLabel = 'Switch to Ubuntu';
+      } else if (query.includes('close all') || query.includes('clear windows')) {
+        aiText = 'Terminating all active window instances.';
+        macroAction = () => {
+          windows.forEach((w) => closeWindow(w.id));
+        };
+        macroLabel = 'Close All Windows';
+      } else {
+        aiText = `Analyzing workspace: active processes are [${activeWinsList || 'None'}]. You can ask me to snap windows, switch shells, or launch apps.`;
+      }
+
+      setChatMessages((prev) => [
+        ...prev,
+        { sender: 'ai', text: aiText, action: macroAction, actionLabel: macroLabel },
+      ]);
+    }, 400);
+  };
+
   // Generate suggestions based on current state
   const generateSuggestions = useCallback((): AISuggestion[] => {
     const out: AISuggestion[] = [];
-    const now = Date.now();
 
     // Pattern: user opens Notepad frequently → suggest snapping it left
     const notepadWin = windows.find((w) => w.appId === 'notepad' && !w.minimized);
@@ -108,36 +198,8 @@ export function AIAssistant({ onLock }: AIAssistantProps) {
       }
     }
 
-    // Pattern: Frequent app recommendation based on usage history
-    const recentOpens = usageLog.current.filter(
-      (e) => e.action === 'open' && now - e.timestamp < 300000 // 5 min window
-    );
-    const appCounts: Record<string, number> = {};
-    for (const e of recentOpens) {
-      appCounts[e.appId] = (appCounts[e.appId] ?? 0) + 1;
-    }
-    const openAppIds = new Set(windows.map((w) => w.appId));
-    const frequentApp = Object.entries(appCounts)
-      .sort((a, b) => b[1] - a[1])
-      .find(([id]) => !openAppIds.has(id));
-    if (frequentApp) {
-      const appId = frequentApp[0] as AppId;
-      const appNames: Record<string, string> = {
-        explorer: 'File Explorer', browser: 'Browser', terminal: 'Terminal',
-        notepad: 'Notepad', settings: 'Settings', game: 'Space Runner', appstore: 'App Store',
-      };
-      out.push({
-        id: `suggest-app-${appId}`,
-        type: 'app',
-        title: `Open ${appNames[appId] ?? appId}?`,
-        description: 'You frequently use this app during your current session.',
-        actionLabel: 'Open',
-        action: () => openApp(appId),
-      });
-    }
-
     return out;
-  }, [windows, openApp, updateWindowRect]);
+  }, [windows, updateWindowRect]);
 
   // Refresh suggestions periodically
   useEffect(() => {
@@ -158,142 +220,146 @@ export function AIAssistant({ onLock }: AIAssistantProps) {
     setSuggestions((prev) => prev.filter((s) => s.id !== id));
   };
 
-  const visibleSuggestions = suggestions.slice(0, 3);
+  const visibleSuggestions = suggestions.slice(0, 2);
   const hasSuggestions = visibleSuggestions.length > 0;
 
   return (
     <>
-      {/* Floating AI orb in system tray */}
+      {/* Floating Copilot Icon in system tray */}
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="relative h-9 w-9 rounded-xl flex items-center justify-center transition shrink-0 hover:bg-white/10 group"
-        title="AI Assistant"
+        className={`relative h-8 w-8 rounded-lg flex items-center justify-center transition shrink-0 ${
+          expanded ? 'bg-cyan-500/30 text-cyan-300' : 'hover:bg-white/10 text-white/80'
+        }`}
+        title="Windows Copilot Assistant"
       >
-        <motion.div
-          animate={{ rotate: expanded ? 180 : 0 }}
-          transition={{ duration: 0.3 }}
-        >
-          <Icon name="Sparkles" size={18} className="text-violet-300" />
+        <motion.div animate={{ rotate: expanded ? 90 : 0 }} transition={{ duration: 0.2 }}>
+          <Icon name="Sparkles" size={16} className="text-cyan-300" />
         </motion.div>
         {hasSuggestions && !expanded && (
-          <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="absolute -top-0.5 -right-0.5 h-3 w-3 rounded-full bg-violet-400 border border-white/30"
-          />
-        )}
-        {/* Pulsing glow ring when suggestions available */}
-        {hasSuggestions && !expanded && (
-          <motion.span
-            className="absolute inset-0 rounded-xl"
-            animate={{ boxShadow: ['0 0 0px rgba(167,139,250,0)', '0 0 12px rgba(167,139,250,0.6)', '0 0 0px rgba(167,139,250,0)'] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
+          <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-cyan-400 animate-ping" />
         )}
       </button>
 
-      {/* AI suggestion panel */}
+      {/* Docked Windows Copilot Right Panel */}
       <AnimatePresence>
         {expanded && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setExpanded(false)} />
             <motion.div
-              initial={{ opacity: 0, y: 20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 20, scale: 0.95 }}
+              initial={{ opacity: 0, x: 80 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 80 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="glass liquid-glass-taskbar fixed bottom-16 right-3 z-50 w-80 rounded-2xl p-4"
+              className="liquid-glass-card fixed top-0 right-0 bottom-10 z-50 w-84 sm:w-96 flex flex-col justify-between p-4 border-l border-white/10 shadow-2xl rounded-l-2xl rounded-r-none backdrop-blur-2xl"
             >
               {/* Header */}
-              <div className="flex items-center gap-2 mb-4">
-                <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-violet-400 to-indigo-500 flex items-center justify-center liquid-glow">
-                  <Icon name="Sparkles" size={16} className="text-white" />
-                </div>
-                <div className="flex-1">
-                  <div className="text-sm text-white/90 font-medium">AI Assistant</div>
-                  <div className="text-[10px] text-white/50">Observing your desktop patterns</div>
+              <div className="flex items-center justify-between pb-3 border-b border-white/10 shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+                    <Icon name="Sparkles" size={16} className="text-white" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-white tracking-wide">Windows Copilot</div>
+                    <div className="text-[10px] text-cyan-300/80 font-mono">Offline AI Companion</div>
+                  </div>
                 </div>
                 <button
                   onClick={() => setExpanded(false)}
-                  className="p-1 rounded-lg text-white/50 hover:bg-white/10 hover:text-white transition"
+                  className="p-1.5 rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition"
                 >
-                  <Icon name="X" size={14} />
+                  <Icon name="X" size={16} />
                 </button>
               </div>
 
-              {/* Suggestions list */}
-              {hasSuggestions ? (
-                <div className="space-y-2 max-h-[320px] overflow-y-auto">
-                  {visibleSuggestions.map((s) => (
-                    <motion.div
-                      key={s.id}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 10 }}
-                      className="glass-panel rounded-xl p-3 group"
+              {/* Chat Messages Body */}
+              <div className="flex-1 min-h-0 overflow-y-auto py-3 space-y-3">
+                {chatMessages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={`flex flex-col ${msg.sender === 'user' ? 'items-end' : 'items-start'}`}
+                  >
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed ${
+                        msg.sender === 'user'
+                          ? 'bg-cyan-500/30 text-white border border-cyan-400/30 shadow-md'
+                          : 'bg-white/5 border border-white/10 text-white/90 shadow-lg'
+                      }`}
                     >
-                      <div className="flex items-start gap-2">
-                        <div className="mt-0.5 shrink-0">
-                          <SuggestionIcon type={s.type} />
+                      {msg.text}
+                      {msg.action && msg.actionLabel && (
+                        <div className="mt-2 pt-2 border-t border-white/10">
+                          <button
+                            onClick={msg.action}
+                            className="px-2.5 py-1 rounded-lg bg-cyan-500/80 hover:bg-cyan-400 text-slate-950 font-semibold text-[11px] transition shadow-md flex items-center gap-1.5"
+                          >
+                            <Icon name="Play" size={12} />
+                            <span>{msg.actionLabel}</span>
+                          </button>
                         </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Intelligent Workspace Suggestions */}
+                {visibleSuggestions.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-white/5 space-y-2">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-cyan-300/70">
+                      Smart Desktop Actions
+                    </div>
+                    {visibleSuggestions.map((s) => (
+                      <div
+                        key={s.id}
+                        className="p-2.5 rounded-xl bg-white/5 border border-white/10 flex items-start gap-2.5"
+                      >
+                        <SuggestionIcon type={s.type} />
                         <div className="flex-1 min-w-0">
-                          <div className="text-xs text-white/90 font-medium leading-tight">{s.title}</div>
-                          <div className="text-[10px] text-white/50 mt-0.5 leading-tight">{s.description}</div>
-                          <div className="flex gap-1.5 mt-2">
+                          <div className="text-xs font-medium text-white">{s.title}</div>
+                          <div className="text-[10px] text-white/50">{s.description}</div>
+                          <div className="flex gap-2 mt-2">
                             <button
                               onClick={() => {
                                 s.action();
                                 dismiss(s.id);
                               }}
-                              className="px-2.5 py-1 rounded-lg text-[10px] bg-violet-500/80 hover:bg-violet-400 text-white transition font-medium"
+                              className="px-2.5 py-1 rounded-md bg-cyan-500/80 hover:bg-cyan-400 text-slate-950 text-[10px] font-bold transition"
                             >
                               {s.actionLabel}
                             </button>
                             <button
                               onClick={() => dismiss(s.id)}
-                              className="px-2.5 py-1 rounded-lg text-[10px] text-white/50 hover:bg-white/10 transition"
+                              className="px-2 py-1 rounded-md text-[10px] text-white/50 hover:bg-white/10 transition"
                             >
                               Dismiss
                             </button>
                           </div>
                         </div>
                       </div>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="h-10 w-10 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-2">
-                    <Icon name="Check" size={18} className="text-white/30" />
+                    ))}
                   </div>
-                  <div className="text-xs text-white/40">No suggestions right now</div>
-                  <div className="text-[10px] text-white/30 mt-1">I'm learning your patterns</div>
-                </div>
-              )}
-
-              {/* Quick actions footer */}
-              <div className="flex items-center gap-1 mt-3 pt-3 border-t border-white/10">
-                <button
-                  onClick={() => { openApp('settings'); setExpanded(false); }}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] text-white/60 hover:bg-white/10 transition"
-                >
-                  <Icon name="Settings" size={12} /> Settings
-                </button>
-                <button
-                  onClick={() => { openApp('terminal'); setExpanded(false); }}
-                  className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] text-white/60 hover:bg-white/10 transition"
-                >
-                  <Icon name="SquareTerminal" size={12} /> Terminal
-                </button>
-                {onLock && (
-                  <button
-                    onClick={() => { onLock(); setExpanded(false); }}
-                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-lg text-[10px] text-white/60 hover:bg-white/10 transition"
-                  >
-                    <Icon name="Lock" size={12} /> Lock
-                  </button>
                 )}
+                <div ref={chatEndRef} />
               </div>
+
+              {/* Chat Input Bar */}
+              <form onSubmit={handleChatSubmit} className="pt-2 border-t border-white/10 shrink-0">
+                <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-xl px-3 py-1.5 focus-within:border-cyan-400/50 focus-within:bg-white/10 transition">
+                  <input
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="Ask Copilot (e.g. 'snap apps', 'open terminal')..."
+                    className="flex-1 bg-transparent text-xs text-white outline-none placeholder:text-white/40"
+                  />
+                  <button
+                    type="submit"
+                    className="p-1 rounded-lg bg-cyan-500/80 hover:bg-cyan-400 text-slate-950 transition disabled:opacity-30"
+                    disabled={!chatInput.trim()}
+                  >
+                    <Icon name="Send" size={13} />
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </>
         )}
