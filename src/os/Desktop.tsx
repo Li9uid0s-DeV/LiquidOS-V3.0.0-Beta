@@ -660,9 +660,9 @@ export function Desktop() {
       )}
 
       {/* ========================================================
-          DESKTOP ICONS GRID (Windows Mode — Ultra-High Density Minimalist)
+          DESKTOP ICONS GRID (Windows, XP, Vista, 10, 11, DeX, ChromeOS)
          ======================================================== */}
-      {shellMode === 'windows' && (
+      {['windows', 'windows11', 'windows10', 'vista', 'xp', 'dex', 'chromeos'].includes(shellMode) && (
         <div className="absolute top-4 left-4 z-10 flex flex-col flex-wrap gap-2 max-h-[calc(100vh-64px)] pointer-events-auto">
           {DESKTOP_APPS_LIST.map((item) => (
             <button
@@ -672,13 +672,113 @@ export function Desktop() {
               title={item.label}
             >
               <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center group-hover:scale-110 group-hover:bg-white/15 transition shrink-0">
-                <Icon name={item.icon} size={18} className="text-cyan-300" />
+                <Icon name={item.icon} size={18} className={shellMode === 'xp' ? 'text-amber-300' : shellMode === 'vista' ? 'text-sky-300' : 'text-cyan-300'} />
               </div>
-              <span className="text-[11px] text-white/90 font-medium text-center truncate max-w-full px-0.5 leading-tight select-none">
+              <span className={`text-[11px] font-medium text-center truncate max-w-full px-0.5 leading-tight select-none ${
+                shellMode === 'xp' ? 'text-white font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]' : 'text-white/90'
+              }`}>
                 {item.label}
               </span>
             </button>
           ))}
+        </div>
+      )}
+
+      {/* ========================================================
+          WINDOWS VISTA SIDEBAR WITH LIVE GADGETS (AERO GLASS)
+         ======================================================== */}
+      {shellMode === 'vista' && (
+        <div className="hidden lg:flex fixed right-0 top-0 bottom-10 w-44 z-20 flex-col items-center p-3 gap-4 bg-gradient-to-l from-slate-950/70 to-transparent border-l border-sky-400/20 backdrop-blur-md pointer-events-auto">
+          {/* Vista Gadget 1: Analog Clock */}
+          <div className="w-36 h-36 rounded-full bg-slate-900/80 border-2 border-sky-400/50 shadow-2xl relative flex items-center justify-center p-2 ring-2 ring-white/10">
+            {/* Clock Face Notches */}
+            <div className="absolute inset-2 rounded-full border border-sky-400/20 flex items-center justify-center">
+              {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => (
+                <div
+                  key={deg}
+                  className="absolute w-0.5 h-2 bg-sky-300/60"
+                  style={{
+                    transform: `rotate(${deg}deg) translateY(-54px)`,
+                  }}
+                />
+              ))}
+            </div>
+
+            {/* Hour hand */}
+            <div
+              className="absolute w-1 h-9 bg-white rounded-full origin-bottom"
+              style={{
+                transform: `rotate(${(time.getHours() % 12 + time.getMinutes() / 60) * 30}deg) translateY(-50%)`,
+                boxShadow: '0 0 4px rgba(0,0,0,0.8)',
+              }}
+            />
+
+            {/* Minute hand */}
+            <div
+              className="absolute w-0.5 h-12 bg-sky-200 rounded-full origin-bottom"
+              style={{
+                transform: `rotate(${(time.getMinutes() + time.getSeconds() / 60) * 6}deg) translateY(-50%)`,
+                boxShadow: '0 0 4px rgba(0,0,0,0.8)',
+              }}
+            />
+
+            {/* Second hand */}
+            <div
+              className="absolute w-0.5 h-14 bg-orange-500 rounded-full origin-bottom"
+              style={{
+                transform: `rotate(${time.getSeconds() * 6}deg) translateY(-40%)`,
+              }}
+            />
+
+            {/* Center Cap */}
+            <div className="w-2.5 h-2.5 rounded-full bg-orange-400 border border-white z-10 shadow" />
+            <div className="absolute bottom-6 text-[8px] font-mono text-sky-300/80 uppercase tracking-widest">
+              VISTA
+            </div>
+          </div>
+
+          {/* Vista Gadget 2: Dual CPU & RAM Meter */}
+          <div className="w-36 rounded-2xl bg-slate-900/80 border border-sky-400/30 p-2.5 flex flex-col gap-2 shadow-xl">
+            <div className="flex items-center justify-between text-[10px] text-sky-300 font-semibold uppercase tracking-wider">
+              <span>CPU Meter</span>
+              <Icon name="Activity" size={12} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-center">
+              {/* CPU dial */}
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 rounded-full border-2 border-sky-400/40 relative flex items-center justify-center bg-black/40">
+                  <div
+                    className="absolute w-0.5 h-5 bg-sky-400 origin-bottom"
+                    style={{ transform: `rotate(${-60 + (time.getSeconds() * 3) % 120}deg) translateY(-50%)` }}
+                  />
+                  <div className="w-1.5 h-1.5 rounded-full bg-white z-10" />
+                </div>
+                <span className="text-[9px] text-white/60 mt-1">CPU 24%</span>
+              </div>
+
+              {/* RAM dial */}
+              <div className="flex flex-col items-center">
+                <div className="w-12 h-12 rounded-full border-2 border-emerald-400/40 relative flex items-center justify-center bg-black/40">
+                  <div
+                    className="absolute w-0.5 h-5 bg-emerald-400 origin-bottom"
+                    style={{ transform: `rotate(${-30 + (time.getSeconds() * 2) % 100}deg) translateY(-50%)` }}
+                  />
+                  <div className="w-1.5 h-1.5 rounded-full bg-white z-10" />
+                </div>
+                <span className="text-[9px] text-white/60 mt-1">RAM 3.4G</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Vista Gadget 3: Quick Weather Note */}
+          <div className="w-36 rounded-2xl bg-amber-500/10 border border-amber-400/30 p-2.5 text-xs text-amber-200/90 shadow-xl flex items-center gap-2">
+            <Icon name="Sun" size={18} className="text-amber-400 shrink-0" />
+            <div className="min-w-0">
+              <div className="text-[10px] font-bold text-white">Singularity</div>
+              <div className="text-[9px] text-amber-300/80">21°C · Sunny Aero</div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -714,8 +814,10 @@ export function Desktop() {
         )}
       </AnimatePresence>
 
-      {/* Windows Shell Mode Taskbar */}
-      {shellMode === 'windows' && <Taskbar onLock={lockSystem} />}
+      {/* Desktop Shell Mode Taskbar (Windows 11, 10, Vista, XP, DeX, ChromeOS) */}
+      {['windows', 'windows11', 'windows10', 'vista', 'xp', 'dex', 'chromeos'].includes(shellMode) && (
+        <Taskbar onLock={lockSystem} />
+      )}
 
       {/* Notification Center Overlay */}
       <NotificationCenter isOpen={notifCenterOpen} onClose={() => setNotifCenterOpen(false)} />

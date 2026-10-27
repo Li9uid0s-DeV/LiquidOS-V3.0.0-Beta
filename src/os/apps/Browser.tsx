@@ -4,7 +4,6 @@ import {
   ProxyEngine,
   encodeUltraviolet,
   encodeScramjet,
-  MONOCHROME_CATALOG,
 } from '../proxyService';
 import { useOS } from '../OSContext';
 
@@ -12,20 +11,22 @@ interface Props {
   payload?: { url?: string; isImage?: boolean; engine?: ProxyEngine };
 }
 
-const DEFAULT_HOME = 'https://monochrome.liquid.fm';
+const DEFAULT_HOME = 'about:start';
 
-const BOOKMARKS = [
-  { label: 'Monochrome Music', url: 'https://monochrome.liquid.fm', icon: 'Music', isMonochrome: true },
-  { label: 'DuckDuckGo', url: 'https://duckduckgo.com', icon: 'Search' },
-  { label: 'Wikipedia', url: 'https://en.wikipedia.org', icon: 'FileText' },
-  { label: 'SoundCloud Web', url: 'https://m.soundcloud.com', icon: 'Radio' },
-  { label: 'Archive.org', url: 'https://archive.org', icon: 'HardDrive' },
-  { label: 'GitHub', url: 'https://github.com', icon: 'GitBranch' },
+const SPEED_DIAL = [
+  { label: 'DuckDuckGo', url: 'https://duckduckgo.com', icon: 'Search', desc: 'Privacy-focused Web Search' },
+  { label: 'Wikipedia', url: 'https://en.wikipedia.org', icon: 'FileText', desc: 'The Free Encyclopedia' },
+  { label: 'GitHub', url: 'https://github.com', icon: 'GitBranch', desc: 'Developer Platform' },
+  { label: 'MDN Web Docs', url: 'https://developer.mozilla.org', icon: 'BookOpen', desc: 'Web Technologies' },
+  { label: 'Archive.org', url: 'https://archive.org', icon: 'HardDrive', desc: 'Internet Wayback Machine' },
+  { label: 'Hacker News', url: 'https://news.ycombinator.com', icon: 'Radio', desc: 'Tech & Engineering News' },
+  { label: 'SoundCloud Web', url: 'https://m.soundcloud.com', icon: 'Music', desc: 'Online Audio & Podcasts' },
+  { label: 'Three.js Gallery', url: 'https://threejs.org', icon: 'Sparkles', desc: '3D WebGL Library' },
 ];
 
 function normalizeUrl(input: string): string {
   const v = input.trim();
-  if (!v) return DEFAULT_HOME;
+  if (!v || v === 'about:start' || v === 'about:blank') return v;
   if (/^https?:\/\//i.test(v)) return v;
   if (/^[\w-]+(\.[\w-]+)+/.test(v)) return 'https://' + v;
   return 'https://duckduckgo.com/?q=' + encodeURIComponent(v);
@@ -38,13 +39,14 @@ export function BrowserApp({ payload }: Props) {
 
   const [address, setAddress] = useState(initialUrl);
   const [loadedUrl, setLoadedUrl] = useState(initialUrl);
-  const [inputVal, setInputVal] = useState(initialUrl);
+  const [inputVal, setInputVal] = useState(initialUrl === 'about:start' ? '' : initialUrl);
   const [engine, setEngine] = useState<ProxyEngine>(payload?.engine ?? 'scramjet');
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [history, setHistory] = useState<string[]>([initialUrl]);
   const [historyIdx, setHistoryIdx] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [latency, setLatency] = useState(14);
+  const [frameError, setFrameError] = useState(false);
   const [logs, setLogs] = useState<{ time: string; text: string; type: 'info' | 'proxy' | 'sec' }[]>([
     { time: '00:00', text: '[Scramjet] Initializing Wasm AST Proxy Runtime...', type: 'info' },
     { time: '00:01', text: '[UV] ServiceWorker registered scope: /service/uv/', type: 'sec' },
@@ -69,14 +71,12 @@ export function BrowserApp({ payload }: Props) {
   const navigateTo = (url: string) => {
     const norm = normalizeUrl(url);
     setIsLoading(true);
+    setFrameError(false);
     setAddress(norm);
-    setInputVal(norm);
+    setInputVal(norm === 'about:start' ? '' : norm);
     setLoadedUrl(norm);
 
     addLog(`[${engine.toUpperCase()}] Rewriting request -> ${norm}`, 'proxy');
-    if (norm.includes('monochrome')) {
-      addLog(`[Monochrome] Tunneling Hi-Fi Audio & Synced Lyrics via ${engine.toUpperCase()} pipe`, 'sec');
-    }
 
     setHistory((prev) => {
       const next = prev.slice(0, historyIdx + 1);
@@ -95,8 +95,9 @@ export function BrowserApp({ payload }: Props) {
       setHistoryIdx(prevIdx);
       const url = history[prevIdx];
       setAddress(url);
-      setInputVal(url);
+      setInputVal(url === 'about:start' ? '' : url);
       setLoadedUrl(url);
+      setFrameError(false);
       addLog(`[Navigation] History back to ${url}`, 'info');
     }
   };
@@ -107,22 +108,34 @@ export function BrowserApp({ payload }: Props) {
       setHistoryIdx(nextIdx);
       const url = history[nextIdx];
       setAddress(url);
-      setInputVal(url);
+      setInputVal(url === 'about:start' ? '' : url);
       setLoadedUrl(url);
+      setFrameError(false);
       addLog(`[Navigation] History forward to ${url}`, 'info');
     }
   };
 
-  const isMonochromeSite = useMemo(() => {
-    return loadedUrl.includes('monochrome') || loadedUrl.includes('monochrome.liquid.fm');
-  }, [loadedUrl]);
+  const refreshPage = () => {
+    setIsLoading(true);
+    setFrameError(false);
+    addLog(`[Cache] Cache-bypass refresh -> ${loadedUrl}`, 'info');
+    setTimeout(() => {
+      if (iframeRef.current && loadedUrl !== 'about:start') {
+        iframeRef.current.src = loadedUrl;
+      }
+      setIsLoading(false);
+    }, 350);
+  };
 
   // Compute encoded proxy URL representation
   const encodedProxyString = useMemo(() => {
+    if (loadedUrl === 'about:start') return 'about:start';
     if (engine === 'ultraviolet') return encodeUltraviolet(loadedUrl);
     if (engine === 'scramjet') return encodeScramjet(loadedUrl);
     return loadedUrl;
   }, [engine, loadedUrl]);
+
+  const isStartPage = loadedUrl === 'about:start';
 
   return (
     <div className="flex h-full w-full min-w-0 min-h-0 flex-col bg-zinc-950 text-white select-none">
@@ -149,63 +162,74 @@ export function BrowserApp({ payload }: Props) {
             <Icon name="ArrowRight" size={15} />
           </button>
           <button
-            onClick={() => navigateTo(loadedUrl)}
-            className={`p-1.5 rounded text-white/70 hover:bg-white/10 transition ${isLoading ? 'animate-spin text-orange-400' : ''}`}
-            title="Reload via Proxy"
+            onClick={refreshPage}
+            className={`p-1.5 rounded text-white/70 hover:bg-white/10 transition ${isLoading ? 'animate-spin text-cyan-400' : ''}`}
+            title="Reload Page"
           >
-            <Icon name="RotateCw" size={14} />
+            <Icon name="RefreshCw" size={14} />
           </button>
           <button
-            onClick={() => navigateTo(DEFAULT_HOME)}
-            className="p-1.5 rounded text-white/70 hover:bg-white/10 transition"
-            title="Monochrome Music Home"
+            onClick={() => navigateTo('about:start')}
+            className={`p-1.5 rounded transition ${isStartPage ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10'}`}
+            title="Home / Start Page"
           >
-            <Icon name="Home" size={15} />
+            <Icon name="Home" size={14} />
           </button>
         </div>
 
-        {/* Omnibox / Proxy Address Bar */}
+        {/* Address & Search Bar */}
         <form
-          className="flex-1 flex min-w-0"
           onSubmit={(e) => {
             e.preventDefault();
             navigateTo(inputVal);
           }}
+          className="flex-1 flex items-center gap-2 bg-white/5 border border-white/15 rounded-xl px-3 py-1.5 focus-within:border-cyan-400 focus-within:bg-black/60 transition"
         >
-          <div className="flex-1 flex items-center gap-2 bg-black/50 border border-white/15 rounded-full px-3 py-1.5 focus-within:border-orange-500/80 transition group shadow-inner">
-            {/* Protocol & Security Badge */}
-            <div className="flex items-center gap-1.5 text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-orange-400 shrink-0">
-              <Icon name="ShieldCheck" size={12} className="text-emerald-400" />
-              <span>{engine === 'scramjet' ? 'SJ://' : engine === 'ultraviolet' ? 'UV://' : 'HTTP://'}</span>
-            </div>
-
-            <input
-              value={inputVal}
-              onChange={(e) => setInputVal(e.target.value)}
-              className="flex-1 bg-transparent text-xs text-white/90 outline-none font-sans"
-              placeholder="Enter URL or search through Ultraviolet / Scramjet proxy"
-              spellCheck={false}
-            />
-
-            {isLoading && (
-              <span className="text-[10px] text-orange-400 font-mono animate-pulse shrink-0">
-                Bypassing CORS...
-              </span>
+          <div className="flex items-center gap-1.5 text-white/40">
+            {isStartPage ? (
+              <Icon name="Sparkles" size={14} className="text-cyan-400" />
+            ) : loadedUrl.startsWith('https://') ? (
+              <Icon name="Lock" size={13} className="text-emerald-400" />
+            ) : (
+              <Icon name="Globe" size={14} className="text-white/60" />
             )}
           </div>
+          <input
+            type="text"
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+            placeholder="Search DuckDuckGo or enter URL (e.g. wikipedia.org)..."
+            className="flex-1 bg-transparent text-xs text-white placeholder-white/40 outline-none font-sans"
+          />
+          {inputVal && (
+            <button
+              type="button"
+              onClick={() => setInputVal('')}
+              className="text-white/40 hover:text-white p-0.5"
+            >
+              <Icon name="X" size={12} />
+            </button>
+          )}
+          <button
+            type="submit"
+            className="p-1 rounded-md bg-white/10 hover:bg-cyan-500 hover:text-black text-white/80 transition"
+            title="Go"
+          >
+            <Icon name="CornerDownLeft" size={12} />
+          </button>
         </form>
 
-        {/* Proxy Engine Selector Switcher */}
-        <div className="flex items-center gap-1 bg-zinc-900/80 border border-white/10 p-0.5 rounded-lg shrink-0">
+        {/* Engine Switcher (Scramjet vs Ultraviolet vs Direct) */}
+        <div className="hidden sm:flex items-center gap-1 bg-white/5 p-0.5 rounded-lg border border-white/10">
           <button
             onClick={() => {
               setEngine('scramjet');
-              addLog('[Engine] Switched to Scramjet v1.5 (AST WebAssembly Rewriter)', 'sec');
+              addLog('[Engine] Switched to Scramjet v3 (Wasm AST Rewriter)', 'proxy');
             }}
             className={`px-2 py-1 rounded text-[11px] font-medium flex items-center gap-1.5 transition ${
-              engine === 'scramjet' ? 'bg-orange-500 text-white shadow-sm' : 'text-white/60 hover:text-white'
+              engine === 'scramjet' ? 'bg-cyan-500 text-black font-semibold shadow-sm' : 'text-white/60 hover:text-white'
             }`}
-            title="Scramjet Proxy Engine (High Performance AST DOM Rewrite)"
+            title="Scramjet Proxy Engine (High Performance WebAssembly Rewriting)"
           >
             <Icon name="Zap" size={12} />
             <span>Scramjet</span>
@@ -244,7 +268,7 @@ export function BrowserApp({ payload }: Props) {
           onClick={() => setShowDiagnostics(!showDiagnostics)}
           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-mono border transition shrink-0 ${
             showDiagnostics
-              ? 'bg-orange-500/20 border-orange-500 text-orange-300'
+              ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
               : 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20'
           }`}
           title="Toggle Proxy Diagnostics & Headers"
@@ -259,10 +283,10 @@ export function BrowserApp({ payload }: Props) {
           Proxy Diagnostics Panel (Flyout)
          ------------------------------------------------------------------- */}
       {showDiagnostics && (
-        <div className="bg-zinc-900 border-b border-orange-500/30 p-3 text-xs flex flex-col gap-2">
+        <div className="bg-zinc-900 border-b border-cyan-500/30 p-3 text-xs flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Icon name="Server" size={14} className="text-orange-400" />
+              <Icon name="Server" size={14} className="text-cyan-400" />
               <span className="font-semibold text-white">Proxy Architecture Status</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-mono">
                 {engine.toUpperCase()} ACTIVE
@@ -279,14 +303,14 @@ export function BrowserApp({ payload }: Props) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-2 font-mono text-[11px]">
             <div className="bg-black/40 p-2 rounded border border-white/5">
               <span className="text-white/50 block text-[10px]">BARE SERVER GATEWAY</span>
-              <span className="text-orange-300 truncate block">wss://bare.liquid-proxy.io/v3/</span>
+              <span className="text-cyan-300 truncate block">wss://bare.liquid-proxy.io/v3/</span>
             </div>
             <div className="bg-black/40 p-2 rounded border border-white/5">
               <span className="text-white/50 block text-[10px]">ENCRYPTION / PROTOCOL</span>
               <span className="text-purple-300">AES-256-GCM + XOR 2-Byte</span>
             </div>
             <div className="bg-black/40 p-2 rounded border border-white/5">
-              <span className="text-white/50 block text-[10px]">CORs & FRAME BYPASS</span>
+              <span className="text-white/50 block text-[10px]">CORS & FRAME BYPASS</span>
               <span className="text-emerald-300">X-Frame-Options: Stripped</span>
             </div>
           </div>
@@ -300,7 +324,7 @@ export function BrowserApp({ payload }: Props) {
                 <span className="text-white/40 shrink-0">[{log.time}]</span>
                 <span
                   className={
-                    log.type === 'sec' ? 'text-purple-300' : log.type === 'proxy' ? 'text-orange-300' : 'text-white/70'
+                    log.type === 'sec' ? 'text-purple-300' : log.type === 'proxy' ? 'text-cyan-300' : 'text-white/70'
                   }
                 >
                   {log.text}
@@ -312,19 +336,15 @@ export function BrowserApp({ payload }: Props) {
       )}
 
       {/* -------------------------------------------------------------------
-          Bookmarks Quick Access Bar
+          Quick Bookmarks / Tunnels Bar
          ------------------------------------------------------------------- */}
       <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-white/10 bg-zinc-950/70 overflow-x-auto shrink-0">
         <span className="text-[10px] text-white/40 uppercase tracking-widest font-mono mr-1">Tunnels:</span>
-        {BOOKMARKS.map((b) => (
+        {SPEED_DIAL.slice(0, 6).map((b) => (
           <button
             key={b.url}
             onClick={() => navigateTo(b.url)}
-            className={`px-2.5 py-1 rounded-md text-[11px] flex items-center gap-1.5 whitespace-nowrap transition ${
-              b.isMonochrome
-                ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30 hover:bg-orange-500/30'
-                : 'text-white/70 hover:bg-white/10 hover:text-white'
-            }`}
+            className="px-2.5 py-1 rounded-md text-[11px] flex items-center gap-1.5 whitespace-nowrap transition text-white/70 hover:bg-white/10 hover:text-white"
           >
             <Icon name={b.icon} size={12} />
             <span>{b.label}</span>
@@ -340,134 +360,148 @@ export function BrowserApp({ payload }: Props) {
       </div>
 
       {/* -------------------------------------------------------------------
-          Main View Area: Embedded Monochrome Music Client OR Proxy Browser
+          Main View Area (Clean Web Browser View)
          ------------------------------------------------------------------- */}
       <div className="flex-1 relative bg-zinc-950 min-h-0 overflow-hidden">
         {isImage ? (
           <div className="h-full w-full flex items-center justify-center bg-zinc-900 overflow-auto p-4">
             <img src={loadedUrl} alt={address} className="max-w-full max-h-full object-contain rounded-lg shadow-2xl" />
           </div>
-        ) : isMonochromeSite ? (
+        ) : isStartPage ? (
           /* ===============================================================
-             Embedded Monochrome Music Portal (Loaded via Proxy)
+             Clean Browser Start Page & Speed Dial Grid
              =============================================================== */
-          <div className="h-full w-full flex flex-col bg-zinc-950 overflow-y-auto">
-            {/* Monochrome Banner / Proxy Tunnel Bar */}
-            <div className="px-6 py-4 bg-gradient-to-r from-zinc-950 via-zinc-900 to-black border-b border-white/10 flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-500 to-amber-400 flex items-center justify-center shadow-lg shadow-orange-500/20">
-                  <Icon name="Music" size={20} className="text-black" />
+          <div className="h-full w-full overflow-y-auto p-6 md:p-10 flex flex-col items-center justify-center bg-gradient-to-b from-zinc-950 via-zinc-900 to-black">
+            <div className="w-full max-w-3xl space-y-8">
+              {/* Logo & Headline */}
+              <div className="text-center space-y-2">
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white shadow-xl shadow-cyan-500/20 mb-1">
+                  <Icon name="Globe" size={28} />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h1 className="text-base font-bold tracking-tight text-white">Monochrome Music</h1>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-mono uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      Tidal Hi-Fi Lossless
-                    </span>
-                  </div>
-                  <p className="text-xs text-white/60">
-                    Connected via <strong className="text-orange-400 capitalize">{engine}</strong> proxy tunnel • 96kHz / 24-bit
-                  </p>
-                </div>
+                <h1 className="text-2xl font-bold tracking-tight text-white">Liquid Web Browser</h1>
+                <p className="text-xs text-white/60">
+                  Sandboxed proxy browsing engine powered by <span className="text-cyan-400 font-semibold">{engine.toUpperCase()}</span> and Bare Server v3
+                </p>
               </div>
 
-              {/* Action Button: Cross-launch directly into Native LiquidOS Music App */}
-              <button
-                onClick={() => openApp('synth')}
-                className="px-4 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-xs font-semibold flex items-center gap-2 shadow-lg shadow-orange-500/30 transition"
+              {/* Central Search Box */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (inputVal.trim()) navigateTo(inputVal);
+                }}
+                className="flex items-center gap-3 bg-white/10 hover:bg-white/15 focus-within:bg-black/80 focus-within:ring-2 focus-within:ring-cyan-400/80 rounded-2xl px-5 py-3.5 border border-white/15 shadow-2xl transition"
               >
-                <Icon name="Disc" size={15} />
-                <span>Open in LiquidOS Music App</span>
-                <Icon name="ExternalLink" size={13} className="opacity-70" />
-              </button>
-            </div>
+                <Icon name="Search" size={18} className="text-cyan-400 shrink-0" />
+                <input
+                  type="text"
+                  value={inputVal}
+                  onChange={(e) => setInputVal(e.target.value)}
+                  placeholder="Search the web or type a URL..."
+                  className="w-full bg-transparent text-sm text-white placeholder-white/40 outline-none"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-semibold shrink-0 transition"
+                >
+                  Browse
+                </button>
+              </form>
 
-            {/* Curated Monochrome Tracks available through the proxy */}
-            <div className="p-6 max-w-5xl mx-auto w-full space-y-6">
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h2 className="text-sm font-semibold uppercase tracking-wider text-white/90">
-                      Featured Monochrome Hi-Fi Streams
-                    </h2>
-                    <p className="text-xs text-white/50">
-                      Decrypted in real-time with full synchronized lyrics and lossless waveforms.
-                    </p>
-                  </div>
-                  <span className="text-xs font-mono text-orange-400">
-                    {MONOCHROME_CATALOG.length} Lossless Stems Available
-                  </span>
+              {/* Speed Dial Grid */}
+              <div className="space-y-3">
+                <div className="text-xs font-semibold uppercase tracking-wider text-white/50 px-1">
+                  Speed Dial & Bookmarks
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {MONOCHROME_CATALOG.map((track) => (
-                    <div
-                      key={track.id}
-                      onClick={() => openApp('synth')}
-                      className="group p-3.5 rounded-2xl bg-zinc-900/60 border border-white/10 hover:border-orange-500/50 hover:bg-zinc-900/90 transition cursor-pointer flex flex-col justify-between gap-3 shadow-md"
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  {SPEED_DIAL.map((item) => (
+                    <button
+                      key={item.url}
+                      onClick={() => navigateTo(item.url)}
+                      className="p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-400/50 transition text-left flex flex-col justify-between h-28 group"
                     >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${track.coverGradient} border border-white/15 flex items-center justify-center shrink-0 shadow-inner group-hover:scale-105 transition`}
-                        >
-                          <Icon name="Music" size={20} className="text-white/80" />
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <h3 className="text-xs font-semibold text-white group-hover:text-orange-400 transition truncate">
-                            {track.title}
-                          </h3>
-                          <p className="text-[11px] text-white/60 truncate">{track.artist}</p>
-                          <p className="text-[10px] text-white/40 truncate">{track.album}</p>
-                        </div>
+                      <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-cyan-300 group-hover:scale-110 transition">
+                        <Icon name={item.icon} size={16} />
                       </div>
-
-                      <div className="flex items-center justify-between text-[10px] font-mono text-white/50 border-t border-white/5 pt-2">
-                        <span className="px-1.5 py-0.5 rounded bg-white/5 text-orange-300">
-                          {track.format.split(' ')[0]}
-                        </span>
-                        <div className="flex items-center gap-1.5 text-orange-400 group-hover:translate-x-0.5 transition">
-                          <span>Stream Lossless</span>
-                          <Icon name="Play" size={11} />
+                      <div>
+                        <div className="text-xs font-semibold text-white group-hover:text-cyan-300 transition">
+                          {item.label}
                         </div>
+                        <div className="text-[10px] text-white/50 truncate">{item.desc}</div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
 
-              {/* Synchronized Lyrics Preview Box */}
-              <div className="p-4 rounded-2xl bg-zinc-900/40 border border-white/10 flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-semibold text-white">
-                    <Icon name="Mic2" size={15} className="text-orange-400" />
-                    <span>Real-Time Karaoke Synced Lyrics Engine (LRC Protocol)</span>
+              {/* Dedicated Music App Cross-link (Keeping apps strictly separate) */}
+              <div className="p-4 rounded-2xl bg-gradient-to-r from-orange-500/15 via-zinc-900 to-black border border-orange-500/30 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-500 flex items-center justify-center text-black shrink-0">
+                    <Icon name="Music" size={20} />
                   </div>
-                  <span className="text-[10px] font-mono text-emerald-400">PROXY SYNC: 100% OK</span>
+                  <div>
+                    <h3 className="text-xs font-bold text-white">Looking for Monochrome Music?</h3>
+                    <p className="text-[11px] text-white/60">
+                      Music & Synced Karaoke lyrics now run in their own dedicated LiquidOS Music App.
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-white/60 leading-relaxed">
-                  Monochrome Music streams dynamic live lyrics through the Ultraviolet / Scramjet proxy tunnel.
-                  When you open the Music App, the lyrics follow the singing voice line by line with millisecond accuracy.
-                </p>
-                <div className="bg-black/60 p-3 rounded-xl border border-white/5 font-mono text-xs space-y-1 text-white/80">
-                  <div className="text-orange-400 font-semibold">[00:10.00] Drifting beyond the event horizon</div>
-                  <div className="text-white/70">[00:16.20] Photons bent in an infinite ring of fire</div>
-                  <div className="text-white/40">[00:22.50] Monochrome frequencies cutting through vacuum</div>
-                </div>
+                <button
+                  onClick={() => openApp('synth')}
+                  className="px-3.5 py-2 rounded-xl bg-orange-500 hover:bg-orange-600 active:scale-95 text-white text-xs font-semibold flex items-center gap-2 shrink-0 transition"
+                >
+                  <Icon name="Disc" size={14} />
+                  <span>Launch Music App</span>
+                </button>
               </div>
             </div>
           </div>
         ) : (
           /* ===============================================================
-             General Proxied Web Viewer (With sandboxed proxy frame)
+             Active Webpage Frame via Proxy
              =============================================================== */
-          <div className="h-full w-full relative">
+          <div className="h-full w-full relative bg-white">
             <iframe
               ref={iframeRef}
               src={loadedUrl}
               className="h-full w-full border-0 bg-white"
               title="proxy-browser"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+              onError={() => setFrameError(true)}
             />
+
+            {frameError && (
+              <div className="absolute inset-0 bg-zinc-950 flex flex-col items-center justify-center p-6 text-center space-y-4">
+                <div className="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center">
+                  <Icon name="Shield" size={24} />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">Direct Frame Blocked by Origin</h2>
+                  <p className="text-xs text-white/60 max-w-md mt-1">
+                    {loadedUrl} enforces strict X-Frame-Options or CSP. Switch to Ultraviolet or Scramjet proxy to strip frame restrictions.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setEngine('scramjet');
+                      refreshPage();
+                    }}
+                    className="px-4 py-2 rounded-xl bg-cyan-500 text-black font-semibold text-xs transition hover:bg-cyan-400"
+                  >
+                    Retry with Scramjet
+                  </button>
+                  <button
+                    onClick={() => navigateTo('about:start')}
+                    className="px-4 py-2 rounded-xl bg-white/10 text-white text-xs hover:bg-white/20 transition"
+                  >
+                    Back to Start
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -293,50 +293,80 @@ export function SettingsApp() {
               <p className="text-xs text-white/50">Seamlessly switch between famous OS desktop paradigms.</p>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {[
                 {
-                  id: 'windows',
-                  name: 'Windows 11 Fluent Shell',
-                  desc: 'Full-width bottom taskbar, centered Start Menu, system tray.',
+                  id: 'windows11',
+                  name: 'Windows 11 Fluent',
+                  desc: 'Mica rounded windows, centered taskbar, floating start menu with pinned & recommended grid.',
                   icon: 'Monitor',
                 },
                 {
+                  id: 'windows10',
+                  name: 'Windows 10 Hybrid',
+                  desc: 'Sharp taskbar, Cortana search bar, split Start Menu with live tiles & alphabetical list.',
+                  icon: 'Grid3x3',
+                },
+                {
+                  id: 'metro',
+                  name: 'Windows 8 Metro Live',
+                  desc: 'Full-screen liquid glass live tiles dashboard with dynamic application cards.',
+                  icon: 'LayoutGrid',
+                },
+                {
+                  id: 'vista',
+                  name: 'Windows Vista Aero Glass',
+                  desc: 'Translucent Aero Glass windows, iconic glowing Start Orb, and live desktop Sidebar gadgets (Analog Clock, CPU Gauge).',
+                  icon: 'Sparkles',
+                },
+                {
+                  id: 'xp',
+                  name: 'Windows XP Luna Blue',
+                  desc: 'Legendary Luna Blue taskbar, curved green Start button, classic 2-column menu, and beveled windows.',
+                  icon: 'Flame',
+                },
+                {
+                  id: 'dex',
+                  name: 'Samsung DeX Desktop',
+                  desc: 'Galaxy desktop environment with bottom DeX bar, app drawer, multi-window layout, and system status.',
+                  icon: 'Layers',
+                },
+                {
+                  id: 'chromeos',
+                  name: 'ChromeOS Material Shelf',
+                  desc: 'Minimalist shelf with circular Everything Button launcher, centered apps, and quick settings pill.',
+                  icon: 'Globe',
+                },
+                {
                   id: 'mac',
-                  name: 'macOS Liquid Dock & Menu',
-                  desc: 'Floating magnified bottom dock with top global utility menu bar.',
+                  name: 'macOS Liquid Dock',
+                  desc: 'Floating magnified bottom dock with top global utility menu bar and traffic lights.',
                   icon: 'Apple',
                 },
                 {
                   id: 'ubuntu',
-                  name: 'Ubuntu Linux Launcher',
-                  desc: 'Flush left-aligned vertical dock sidebar with active indicator badges.',
+                  name: 'Ubuntu Linux 24.04',
+                  desc: 'Left vertical launcher sidebar with activity indicators and top system bar.',
                   icon: 'SlidersHorizontal',
                 },
                 {
                   id: 'android',
                   name: 'Android Material You',
-                  desc: 'Status bar, Google search pill, app grid, and gesture navigation bar.',
+                  desc: 'Top status bar, Google search pill, Material You app grid, and gesture pill.',
                   icon: 'Smartphone',
                 },
                 {
                   id: 'ios',
                   name: 'iOS SpringBoard',
-                  desc: 'Dynamic Island status bar, 4x6 grid icons, bottom dock, home indicator.',
+                  desc: 'Dynamic Island status bar, 4x6 squircle grid, glass dock, and swipe home bar.',
                   icon: 'Tablet',
-                },
-                {
-                  id: 'metro',
-                  name: 'Windows 8 Metro Live Tiles',
-                  desc: 'Full-screen liquid glass live tiles dashboard with live updating cards.',
-                  icon: 'Grid3x3',
                 },
               ].map((s) => (
                 <button
                   key={s.id}
                   onClick={() => setShellMode(s.id as ShellMode)}
                   className={`glass-panel p-4 rounded-xl text-left flex flex-col gap-2 transition border ${
-                    shellMode === s.id
+                    shellMode === s.id || (s.id === 'windows11' && shellMode === 'windows') || (s.id === 'metro' && shellMode === 'windows8')
                       ? 'border-orange-400 bg-orange-500/20 text-white shadow-lg shadow-orange-500/20'
                       : 'border-white/10 text-white/70 hover:bg-white/10'
                   }`}

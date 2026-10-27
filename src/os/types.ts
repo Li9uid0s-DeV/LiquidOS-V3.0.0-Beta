@@ -53,7 +53,20 @@ export const TASKBAR_APPS: TaskbarApp[] = [
 ];
 
 export type TaskbarAlign = 'center' | 'left';
-export type ShellMode = 'windows' | 'mac' | 'ubuntu' | 'android' | 'ios' | 'metro';
+export type ShellMode =
+  | 'windows'
+  | 'windows11'
+  | 'windows10'
+  | 'windows8'
+  | 'vista'
+  | 'xp'
+  | 'dex'
+  | 'chromeos'
+  | 'mac'
+  | 'ubuntu'
+  | 'android'
+  | 'ios'
+  | 'metro';
 export type WindowsTaskbarStyle = 'modern' | 'classic';
 export type DesignEngine = 'liquid-glass' | 'frosted-blur' | 'windows-mica' | 'dark-slate' | 'cyberpunk-neon';
 export type NebulaPreset = 'gargantua' | 'ultraviolet' | 'indigo' | 'cyan-quasar' | 'solar-flare';
