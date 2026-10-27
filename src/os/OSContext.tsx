@@ -18,6 +18,8 @@ import {
   InstalledApp,
   StoreApp,
   STORE_CATALOG,
+  StoreTheme,
+  STORE_THEMES,
   CalendarTask,
   UserProfile,
   NotificationItem,
@@ -138,6 +140,15 @@ export interface OSContextValue {
   isInstalled: (appId: string) => boolean;
   storeCatalog: StoreApp[];
 
+  // Themes Catalog & Downloads
+  storeThemes: StoreTheme[];
+  installedThemeIds: string[];
+  currentThemeId: string | null;
+  installTheme: (themeId: string) => void;
+  uninstallTheme: (themeId: string) => void;
+  applyThemeConfig: (themeId: string) => void;
+  isThemeInstalled: (themeId: string) => boolean;
+
   // Calendar & Task Scheduler
   calendarTasks: CalendarTask[];
   addTask: (task: Omit<CalendarTask, 'id'>) => void;
@@ -200,6 +211,8 @@ const INITIAL_TASKS: CalendarTask[] = [
 
 const LS_KEY = 'liquid-os-v3-settings';
 const LS_APPS_KEY = 'liquid-os-v3-installed-apps';
+const LS_THEMES_KEY = 'liquid-os-v3-installed-themes';
+const LS_CURRENT_THEME_KEY = 'liquid-os-v3-current-theme';
 const LS_TASKS_KEY = 'liquid-os-v3-calendar-tasks';
 const LS_FS_KEY = 'liquid-os-v3-filesystem';
 
@@ -310,6 +323,13 @@ export function OSProvider({ children }: { children: ReactNode }) {
         builtInAppId: 'synth',
       },
     ])
+  );
+
+  const [installedThemeIds, setInstalledThemeIds] = useState<string[]>(() =>
+    loadPersisted<string[]>(LS_THEMES_KEY, ['win11-mica', 'vista-aero', 'xp-luna'])
+  );
+  const [currentThemeId, setCurrentThemeId] = useState<string | null>(() =>
+    loadPersisted<string | null>(LS_CURRENT_THEME_KEY, 'win11-mica')
   );
 
   const [calendarTasks, setCalendarTasks] = useState<CalendarTask[]>(() =>
@@ -468,6 +488,23 @@ export function OSProvider({ children }: { children: ReactNode }) {
       // Ignore quota error
     }
   }, [installedApps]);
+
+  // Persist Themes
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_THEMES_KEY, JSON.stringify(installedThemeIds));
+    } catch {
+      // Ignore quota error
+    }
+  }, [installedThemeIds]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(LS_CURRENT_THEME_KEY, JSON.stringify(currentThemeId));
+    } catch {
+      // Ignore quota error
+    }
+  }, [currentThemeId]);
 
   // Persist Calendar Tasks
   useEffect(() => {
@@ -872,6 +909,57 @@ export function OSProvider({ children }: { children: ReactNode }) {
     [installedApps]
   );
 
+  // Theme Operations
+  const isThemeInstalled = useCallback(
+    (themeId: string) => installedThemeIds.includes(themeId),
+    [installedThemeIds]
+  );
+
+  const installTheme = useCallback((themeId: string) => {
+    playSound('notify');
+    setInstalledThemeIds((prev) => (prev.includes(themeId) ? prev : [...prev, themeId]));
+    const target = STORE_THEMES.find((t) => t.id === themeId);
+    if (target) {
+      addNotification({
+        title: 'Theme Downloaded',
+        message: `${target.name} has been added to your theme library.`,
+        icon: 'Palette',
+      });
+      triggerDynamicIsland(target.name, 'Theme Downloaded', 'Palette');
+    }
+  }, [playSound, addNotification, triggerDynamicIsland]);
+
+  const uninstallTheme = useCallback((themeId: string) => {
+    playSound('click');
+    setInstalledThemeIds((prev) => prev.filter((id) => id !== themeId));
+    if (currentThemeId === themeId) {
+      setCurrentThemeId(null);
+    }
+  }, [playSound, currentThemeId]);
+
+  const applyThemeConfig = useCallback((themeId: string) => {
+    const target = STORE_THEMES.find((t) => t.id === themeId);
+    if (!target) return;
+    playSound('open');
+    setShellMode(target.config.shellMode);
+    setDesignEngine(target.config.designEngine);
+    setWallpaper(target.config.wallpaper);
+    setTheme(target.config.theme);
+    if (target.config.blurAmount !== undefined) setBlurAmount(target.config.blurAmount);
+    if (target.config.cornerRadius !== undefined) setCornerRadius(target.config.cornerRadius);
+    if (target.config.transparency !== undefined) setTransparency(target.config.transparency);
+    setCurrentThemeId(themeId);
+
+    setInstalledThemeIds((prev) => (prev.includes(themeId) ? prev : [...prev, themeId]));
+
+    addNotification({
+      title: 'Theme Applied',
+      message: `Active theme changed to ${target.name}.`,
+      icon: 'Palette',
+    });
+    triggerDynamicIsland(target.name, 'Theme Activated', 'Check');
+  }, [playSound, addNotification, triggerDynamicIsland]);
+
   // Calendar Task Operations
   const addTask = useCallback((task: Omit<CalendarTask, 'id'>) => {
     const id = `task-${Date.now()}`;
@@ -1009,6 +1097,13 @@ export function OSProvider({ children }: { children: ReactNode }) {
     launchInstalledApp,
     isInstalled,
     storeCatalog: STORE_CATALOG,
+    storeThemes: STORE_THEMES,
+    installedThemeIds,
+    currentThemeId,
+    installTheme,
+    uninstallTheme,
+    applyThemeConfig,
+    isThemeInstalled,
     calendarTasks,
     addTask,
     toggleTask,

@@ -15,6 +15,7 @@ const PRESET_WALLPAPERS: Wallpaper[] = ['space', 'aurora', 'sunset', 'ocean', 'f
 
 export function SettingsApp() {
   const {
+    openApp,
     wallpaper,
     setWallpaper,
     shellMode,
@@ -119,6 +120,26 @@ export function SettingsApp() {
             <div>
               <h2 className="text-lg text-white font-bold">Liquid Personalization</h2>
               <p className="text-xs text-white/50">Tune dynamic refraction optics, frosted blur, and glass themes.</p>
+            </div>
+
+            {/* Theme Store shortcut banner */}
+            <div className="flex items-center justify-between p-3.5 rounded-xl bg-gradient-to-r from-cyan-950/60 via-blue-950/40 to-slate-900 border border-cyan-500/30 shadow-md">
+              <div className="space-y-0.5">
+                <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Icon name="Palette" size={14} className="text-cyan-300" />
+                  <span>Theme Store & Visual Shell Catalog</span>
+                </div>
+                <p className="text-[11px] text-white/60">
+                  Download Windows XP Luna, Vista Aero Glass, Samsung DeX, ChromeOS, and Cyberpunk themes from the App Store.
+                </p>
+              </div>
+              <button
+                onClick={() => openApp('appstore')}
+                className="px-3.5 py-1.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold text-xs shrink-0 transition shadow-md shadow-cyan-500/20 flex items-center gap-1.5"
+              >
+                <Icon name="Download" size={13} />
+                <span>Theme Store</span>
+              </button>
             </div>
 
             {/* Design Engine Selector */}
