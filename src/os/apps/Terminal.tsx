@@ -200,10 +200,11 @@ export function TerminalApp() {
         print('Multi-OS Shell Architecture (Windows, macOS, Ubuntu, Android, iOS, Metro).');
         break;
       case 'open': {
-        const valid = ['explorer', 'browser', 'settings', 'notepad', 'terminal', 'game', 'appstore', 'calculator', 'taskmanager', 'sysmon', 'calendar', 'synth'];
+        const valid = ['explorer', 'browser', 'settings', 'notepad', 'terminal', 'game', 'appstore', 'calculator', 'taskmanager', 'sysmon', 'calendar', 'synth', 'music', 'monochrome'];
         const app = args[0]?.toLowerCase();
         if (app && valid.includes(app)) {
-          openApp(app as never);
+          const target = app === 'music' || app === 'monochrome' ? 'synth' : app;
+          openApp(target as never);
           print(`[OK] Launching application process: ${app}`);
         } else {
           print(`open: unknown app '${args[0] ?? ''}'. Available: ${valid.join(', ')}`);

@@ -48,7 +48,7 @@ export const TASKBAR_APPS: TaskbarApp[] = [
   { appId: 'appstore', label: 'App Store', icon: 'Store' },
   { appId: 'sysmon', label: 'System Monitor', icon: 'Activity' },
   { appId: 'calendar', label: 'Calendar & Tasks', icon: 'Calendar' },
-  { appId: 'synth', label: 'Translucent Synth', icon: 'Music' },
+  { appId: 'synth', label: 'Monochrome Music', icon: 'Music' },
   { appId: 'settings', label: 'Settings', icon: 'Settings' },
 ];
 
@@ -137,14 +137,14 @@ export const STORE_CATALOG: StoreApp[] = [
   },
   {
     id: 'synth',
-    name: 'Translucent Audio Synth',
-    description: 'Web Audio API oscillator synth and liquid canvas frequency visualizer.',
+    name: 'Monochrome Music & Synced Lyrics',
+    description: 'Stream Hi-Fi lossless music and real-time lyrics via Scramjet & Ultraviolet proxy tunnel.',
     category: 'utilities',
     icon: 'Music',
-    author: 'Aura Audio',
+    author: 'Monochrome Audio',
     rating: 5.0,
-    size: '2.4 MB',
-    version: '3.0.0',
+    size: '3.1 MB',
+    version: '4.0.0',
     builtInAppId: 'synth',
   },
   {

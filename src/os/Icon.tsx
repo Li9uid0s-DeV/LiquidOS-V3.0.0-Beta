@@ -85,6 +85,16 @@ import {
   HelpCircle,
   Hash,
   Binary,
+  SkipForward,
+  SkipBack,
+  Repeat,
+  Shuffle,
+  Mic2,
+  Volume1,
+  ShieldCheck,
+  Server,
+  ListMusic,
+  Disc,
 } from 'lucide-react';
 
 const map = {
@@ -174,6 +184,16 @@ const map = {
   HelpCircle,
   Hash,
   Binary,
+  SkipForward,
+  SkipBack,
+  Repeat,
+  Shuffle,
+  Mic2,
+  Volume1,
+  ShieldCheck,
+  Server,
+  ListMusic,
+  Disc,
 };
 
 export type IconName = keyof typeof map;

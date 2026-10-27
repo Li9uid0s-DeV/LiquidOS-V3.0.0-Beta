@@ -189,7 +189,7 @@ const APP_DEFAULTS: Record<AppId, { title: string; icon: string; width: number; 
   taskmanager: { title: 'Task Manager', icon: 'Cpu', width: 740, height: 510 },
   sysmon: { title: 'System Monitor', icon: 'Activity', width: 740, height: 520 },
   calendar: { title: 'Calendar & Tasks', icon: 'Calendar', width: 820, height: 550 },
-  synth: { title: 'Translucent Synth', icon: 'Music', width: 760, height: 500 },
+  synth: { title: 'Monochrome Music', icon: 'Music', width: 880, height: 580 },
 };
 
 const INITIAL_TASKS: CalendarTask[] = [
@@ -301,10 +301,10 @@ export function OSProvider({ children }: { children: ReactNode }) {
       {
         id: 'synth',
         appId: 'synth',
-        name: 'Translucent Synth',
+        name: 'Monochrome Music',
         icon: 'Music',
-        description: 'Web Audio synthesizer',
-        author: 'Aura Audio',
+        description: 'Hi-Fi music streaming and synced lyrics via Scramjet & Ultraviolet proxy',
+        author: 'Monochrome Audio',
         category: 'utilities',
         installedAt: Date.now(),
         builtInAppId: 'synth',

@@ -147,7 +147,7 @@ export function Desktop() {
     { id: 'browser', label: 'Liquid Browser', icon: 'Globe' },
     { id: 'terminal', label: 'Terminal', icon: 'SquareTerminal' },
     { id: 'appstore', label: 'App Store', icon: 'Store' },
-    { id: 'synth', label: 'Synth Studio', icon: 'Music' },
+    { id: 'synth', label: 'Monochrome Music', icon: 'Music' },
   ];
 
   return (
@@ -588,18 +588,18 @@ export function Desktop() {
               </div>
             </div>
 
-            {/* Tile 5: Translucent Synth */}
+            {/* Tile 5: Monochrome Music */}
             <div
               onClick={() => { openApp('synth'); setShellMode('windows'); }}
-              className="glass p-5 rounded-2xl cursor-pointer flex flex-col justify-between h-40 hover:scale-[1.02] active:scale-98 transition group bg-gradient-to-br from-violet-500/20 to-indigo-600/30"
+              className="glass p-5 rounded-2xl cursor-pointer flex flex-col justify-between h-40 hover:scale-[1.02] active:scale-98 transition group bg-gradient-to-br from-orange-500/20 to-amber-600/30"
             >
               <div className="flex justify-between items-start">
-                <Icon name="Music" size={26} className="text-violet-400 group-hover:scale-110 transition" />
-                <span className="text-[10px] uppercase font-mono tracking-widest text-violet-300/70">Audio FX</span>
+                <Icon name="Music" size={26} className="text-orange-400 group-hover:scale-110 transition" />
+                <span className="text-[10px] uppercase font-mono tracking-widest text-orange-300/70">Hi-Fi Proxy</span>
               </div>
               <div>
-                <div className="text-base font-semibold text-white">Synthesizer Studio</div>
-                <div className="text-xs text-white/70">Web Audio Harmonic Synthesizer</div>
+                <div className="text-base font-semibold text-white">Monochrome Music</div>
+                <div className="text-xs text-white/70">Lossless Streaming & Synced Lyrics</div>
               </div>
             </div>
 

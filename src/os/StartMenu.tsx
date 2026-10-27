@@ -24,6 +24,7 @@ interface SearchResult {
 const PINNED: { appId: AppId; label: string; icon: string }[] = [
   { appId: 'explorer', label: 'Explorer', icon: 'FolderOpen' },
   { appId: 'browser', label: 'Browser', icon: 'Globe' },
+  { appId: 'synth', label: 'Monochrome Music', icon: 'Music' },
   { appId: 'game', label: 'Cosmic Velocity', icon: 'Flame' },
   { appId: 'calculator', label: 'Calculator Pro', icon: 'Calculator' },
   { appId: 'taskmanager', label: 'Task Manager', icon: 'Cpu' },
