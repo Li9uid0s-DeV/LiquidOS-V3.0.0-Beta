@@ -104,6 +104,7 @@ import {
   Timer,
   Bell,
   Bot,
+  AlarmClock,
   Navigation,
   Flashlight,
   Camera,
