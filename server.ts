@@ -164,41 +164,88 @@ async function startServer() {
     });
   });
 
-  // Web Reverse Proxy Endpoint for Liquid Browser (bypasses X-Frame-Options / CSP)
+  // Web Reverse Proxy Endpoint for Liquid Browser & jsDelivr / GitHub Pages (bypasses X-Frame-Options / CSP / nosniff)
   app.get('/api/proxy', async (req, res) => {
     const rawUrl = req.query.url as string;
     if (!rawUrl) {
       return res.status(400).send('URL query parameter required');
     }
 
-    let targetUrl = rawUrl;
-    if (!/^https?:\/\//i.test(targetUrl)) {
+    let targetUrl = rawUrl.trim();
+
+    // Support jsdelivr:owner/repo or gh:owner/repo shortcuts
+    if (/^(jsdelivr|gh):/i.test(targetUrl)) {
+      const repoPath = targetUrl.replace(/^(jsdelivr|gh):\/+/i, '').replace(/^(jsdelivr|gh):/i, '');
+      const parts = repoPath.split('/');
+      if (parts.length >= 2) {
+        const owner = parts[0];
+        const repo = parts[1].replace(/\.git$/i, '');
+        const rest = parts.slice(2).join('/') || 'index.html';
+        targetUrl = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@latest/${rest}`;
+      }
+    } else if (!/^https?:\/\//i.test(targetUrl)) {
       targetUrl = 'https://' + targetUrl;
     }
 
-    try {
-      const parsed = new URL(targetUrl);
+    const fetchWithFallback = async (urlToFetch: string) => {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 12000);
+      try {
+        const resp = await fetch(urlToFetch, {
+          signal: controller.signal,
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+            Accept:
+              'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+            'Accept-Language': 'en-US,en;q=0.9,ja;q=0.8',
+          },
+        });
+        clearTimeout(timeout);
+        return resp;
+      } catch (e) {
+        clearTimeout(timeout);
+        throw e;
+      }
+    };
 
-      const response = await fetch(targetUrl, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-          Accept:
-            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-          'Accept-Language': 'en-US,en;q=0.9,ja;q=0.8',
-        },
-      });
-      clearTimeout(timeout);
+    try {
+      let response = await fetchWithFallback(targetUrl);
 
-      const contentType = response.headers.get('content-type') || 'text/html; charset=utf-8';
+      // Automatic GitHub Pages -> jsDelivr CDN fallback when GitHub Pages 404s
+      if (!response.ok && response.status === 404) {
+        const ghPagesMatch = targetUrl.match(/^https?:\/\/([^.]+)\.github\.io\/([^/]+)(\/.*)?$/i);
+        if (ghPagesMatch) {
+          const owner = ghPagesMatch[1];
+          const repo = ghPagesMatch[2];
+          const subPath = !ghPagesMatch[3] || ghPagesMatch[3] === '/' ? '/index.html' : ghPagesMatch[3];
+          const jsDelivrUrl = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@latest${subPath}`;
+          const fallbackResp = await fetchWithFallback(jsDelivrUrl);
+          if (fallbackResp.ok) {
+            targetUrl = jsDelivrUrl;
+            response = fallbackResp;
+          }
+        }
+      }
+
+      const parsed = new URL(targetUrl);
+      let contentType = response.headers.get('content-type') || 'text/html; charset=utf-8';
+
+      // jsDelivr & raw.githubusercontent often serve .html with text/plain or nosniff; force text/html for .html or root paths
+      const isJsDelivrOrRaw =
+        parsed.hostname.includes('jsdelivr.net') || parsed.hostname.includes('githubusercontent.com');
+      if (
+        isJsDelivrOrRaw &&
+        (parsed.pathname.endsWith('.html') || parsed.pathname.endsWith('.htm') || parsed.pathname.endsWith('/'))
+      ) {
+        contentType = 'text/html; charset=utf-8';
+      }
 
       // Set headers allowing iframe embedding
       res.setHeader('Content-Type', contentType);
       res.removeHeader('X-Frame-Options');
       res.removeHeader('Content-Security-Policy');
+      res.removeHeader('X-Content-Type-Options');
       res.setHeader('Access-Control-Allow-Origin', '*');
 
       if (contentType.includes('text/html')) {
@@ -270,7 +317,7 @@ async function startServer() {
 
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        const fallback = getFallbackResponse(message, context);
+        const fallback = getFallbackResponse(message);
         return res.json({
           ...fallback,
           note: 'Operating via built-in intelligent engine (GEMINI_API_KEY optional).',

@@ -241,6 +241,7 @@ export function WindowFrame({ win, children }: Props) {
   const isMac = shellMode === 'mac';
   const isUbuntu = shellMode === 'ubuntu';
   const isZorin = shellMode === 'zorin';
+  const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 640;
 
   // Windows freely overlap and drag; only maximize when explicitly maximized or in Windows 8 Metro mode
   const style: React.CSSProperties = isMetro

@@ -1,6 +1,10 @@
 import { Wallpaper } from './OSContext';
 
 export const WALLPAPERS: Record<Wallpaper, { label: string; style: string }> = {
+  live2d: {
+    label: '2D Aurora Live',
+    style: 'linear-gradient(135deg, #050816 0%, #09132c 45%, #071b2f 100%)',
+  },
   space: {
     label: 'Space Live',
     style: 'linear-gradient(135deg, #030014 0%, #0a0420 40%, #0d0530 100%)',

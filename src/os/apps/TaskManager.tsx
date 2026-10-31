@@ -14,7 +14,7 @@ interface ProcessStat {
 }
 
 export function TaskManager() {
-  const { windows, closeWindow, openWindow } = useOS();
+  const { windows, closeWindow, openApp } = useOS();
   const [activeTab, setActiveTab] = useState<'processes' | 'performance' | 'history'>('processes');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProcessId, setSelectedProcessId] = useState<string | null>(null);
@@ -206,7 +206,7 @@ export function TaskManager() {
             <Icon name="XCircle" size={14} /> End Task
           </button>
           <button
-            onClick={() => openWindow('terminal', 'New Task Command', 'SquareTerminal')}
+            onClick={() => openApp('terminal', { title: 'New Task Command', icon: 'SquareTerminal' })}
             className="flex items-center gap-1.5 rounded-lg bg-white/10 px-3 py-1.5 font-medium text-white/80 transition-colors hover:bg-white/20 hover:text-white"
           >
             <Icon name="Plus" size={14} /> Run New Task

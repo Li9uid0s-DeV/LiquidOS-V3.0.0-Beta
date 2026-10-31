@@ -109,6 +109,17 @@ import {
   Flashlight,
   Camera,
   Hand,
+  Calculator,
+  BookOpen,
+  List,
+  History,
+  XCircle,
+  BatteryCharging,
+  Mic,
+  Square,
+  AppWindow,
+  CheckCircle2,
+  RotateCcw,
 } from 'lucide-react';
 
 const map = {
@@ -126,6 +137,17 @@ const map = {
   Flashlight,
   Camera,
   Hand,
+  Calculator,
+  BookOpen,
+  List,
+  History,
+  XCircle,
+  BatteryCharging,
+  Mic,
+  Square,
+  AppWindow,
+  CheckCircle2,
+  RotateCcw,
   FolderOpen,
   Globe,
   SquareTerminal,
@@ -230,11 +252,13 @@ export function Icon({
   name,
   className,
   size = 16,
+  onClick,
 }: {
   name: string;
   className?: string;
   size?: number;
+  onClick?: () => void;
 }) {
   const C = (map as Record<string, typeof FolderOpen>)[name] ?? File;
-  return <C className={className} size={size} />;
+  return <C className={className} size={size} onClick={onClick} />;
 }

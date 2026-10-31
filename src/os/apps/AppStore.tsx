@@ -7,13 +7,40 @@ import { Icon } from '../Icon';
 type Tab = 'featured' | 'themes' | 'utilities' | 'games' | 'library';
 type ThemeCategory = 'all' | 'retro' | 'modern' | 'minimal' | 'cyber' | 'nature';
 
-function parseGitHubUrl(url: string): { valid: boolean; owner?: string; repo?: string; pagesUrl?: string } {
-  const m = url.match(/github\.com\/([^/]+)\/([^/]+)/i);
+function parseGitHubOrJsDelivrUrl(url: string): {
+  valid: boolean;
+  owner?: string;
+  repo?: string;
+  pagesUrl?: string;
+  jsDelivrUrl?: string;
+} {
+  const trimmed = url.trim();
+  // Match cdn.jsdelivr.net/gh/owner/repo
+  const jsd = trimmed.match(/cdn\.jsdelivr\.net\/gh\/([^/]+)\/([^/@]+)(?:@[^/]+)?(\/.*)?/i);
+  if (jsd) {
+    const owner = jsd[1];
+    const repo = jsd[2].replace(/\.git$/, '');
+    const path = jsd[3] || '/index.html';
+    const jsDelivrUrl = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@latest${path}`;
+    return { valid: true, owner, repo, pagesUrl: jsDelivrUrl, jsDelivrUrl };
+  }
+  // Match owner.github.io/repo
+  const ghp = trimmed.match(/([^/]+)\.github\.io\/([^/]+)/i);
+  if (ghp) {
+    const owner = ghp[1];
+    const repo = ghp[2].replace(/\.git$/, '');
+    const pagesUrl = `https://${owner}.github.io/${repo}/`;
+    const jsDelivrUrl = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@latest/index.html`;
+    return { valid: true, owner, repo, pagesUrl, jsDelivrUrl };
+  }
+  // Match github.com/owner/repo or owner/repo
+  const m = trimmed.match(/(?:github\.com\/|^)([a-zA-Z0-9_.-]+)\/([a-zA-Z0-9_.-]+)/i);
   if (!m) return { valid: false };
   const owner = m[1];
   const repo = m[2].replace(/\.git$/, '');
   const pagesUrl = `https://${owner}.github.io/${repo}/`;
-  return { valid: true, owner, repo, pagesUrl };
+  const jsDelivrUrl = `https://cdn.jsdelivr.net/gh/${owner}/${repo}@latest/index.html`;
+  return { valid: true, owner, repo, pagesUrl, jsDelivrUrl };
 }
 
 export function AppStoreApp() {
@@ -73,22 +100,23 @@ export function AppStoreApp() {
     return () => { clearTimeout(t1); clearTimeout(t2); };
   };
 
-  const handleGitHubInstall = () => {
+  const handleGitHubInstall = (useJsDelivr = false) => {
     const url = repoUrl.trim();
-    if (!url) { setRepoError('Please paste a GitHub repository URL.'); return; }
-    const parsed = parseGitHubUrl(url);
+    if (!url) { setRepoError('Enter a GitHub or jsDelivr URL (e.g. owner/repo).'); return; }
+    const parsed = parseGitHubOrJsDelivrUrl(url);
     if (!parsed.valid || !parsed.pagesUrl) {
-      setRepoError('Invalid URL. Use https://github.com/owner/repo');
+      setRepoError('Invalid URL. Use owner/repo, github.com/owner/repo, or cdn.jsdelivr.net/gh/owner/repo');
       return;
     }
     setRepoError('');
     setInstalling(true);
     const repoName = parsed.repo ?? 'Custom App';
+    const targetUrl = useJsDelivr && parsed.jsDelivrUrl ? parsed.jsDelivrUrl : parsed.pagesUrl;
     installApp({
       name: repoName,
-      url: parsed.pagesUrl,
-      icon: 'GitBranch',
-      description: `GitHub app from ${parsed.owner}/${parsed.repo}. Runs via GitHub Pages.`,
+      url: targetUrl,
+      icon: useJsDelivr ? 'Server' : 'GitBranch',
+      description: `Web app from ${parsed.owner}/${parsed.repo} (${useJsDelivr ? 'jsDelivr CDN' : 'GitHub Pages / jsDelivr Auto-Fallback'}).`,
       author: parsed.owner ?? 'GitHub',
       category: 'utilities',
     });
@@ -325,34 +353,41 @@ export function AppStoreApp() {
           })}
         </div>
 
-        {/* GitHub loader */}
+        {/* GitHub & jsDelivr loader */}
         <div className="mt-4 pt-3 border-t border-white/10">
           <div className="text-[11px] text-white/40 px-2 py-1 uppercase tracking-wider mb-2">Developer</div>
           <div className="glass-panel rounded-xl p-2.5">
             <div className="flex items-center gap-1.5 mb-2">
               <Icon name="GitBranch" size={13} className="text-brand-300" />
-              <span className="text-[11px] text-white/70 font-medium">GitHub App</span>
+              <span className="text-[11px] text-white/70 font-medium">GitHub / jsDelivr</span>
             </div>
             <input
               value={repoUrl}
               onChange={(e) => setRepoUrl(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleGitHubInstall()}
-              placeholder="github.com/owner/repo"
+              onKeyDown={(e) => e.key === 'Enter' && handleGitHubInstall(false)}
+              placeholder="owner/repo or jsDelivr URL"
               className="w-full bg-black/30 border border-white/15 rounded-lg px-2 py-1.5 text-[11px] text-white/90 outline-none focus:border-brand-400 mb-1.5"
               spellCheck={false}
             />
             {repoError && <p className="text-[10px] text-red-400 mb-1.5">{repoError}</p>}
-            <button
-              onClick={handleGitHubInstall}
-              disabled={installing}
-              className="w-full px-2 py-1.5 rounded-lg text-[11px] bg-brand-500/80 hover:bg-brand-500 text-white font-medium transition disabled:opacity-50 flex items-center justify-center gap-1.5"
-            >
-              {installing ? (
-                <><Icon name="RefreshCw" size={12} className="animate-spin" /> Installing...</>
-              ) : (
-                <><Icon name="Rocket" size={12} /> Install</>
-              )}
-            </button>
+            <div className="flex gap-1.5">
+              <button
+                onClick={() => handleGitHubInstall(false)}
+                disabled={installing}
+                className="flex-1 px-2 py-1.5 rounded-lg text-[10px] bg-brand-500/80 hover:bg-brand-500 text-white font-medium transition disabled:opacity-50 flex items-center justify-center gap-1"
+                title="Install via GitHub Pages (auto-fallbacks to jsDelivr)"
+              >
+                <Icon name="Rocket" size={11} /> Pages
+              </button>
+              <button
+                onClick={() => handleGitHubInstall(true)}
+                disabled={installing}
+                className="flex-1 px-2 py-1.5 rounded-lg text-[10px] bg-cyan-500/80 hover:bg-cyan-500 text-slate-950 font-semibold transition disabled:opacity-50 flex items-center justify-center gap-1"
+                title="Install directly via jsDelivr CDN"
+              >
+                <Icon name="Server" size={11} /> jsDelivr
+              </button>
+            </div>
           </div>
         </div>
       </div>

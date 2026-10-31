@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Component, ErrorInfo, ReactNode, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useOS } from './OSContext';
 import { WindowFrame } from './WindowFrame';
@@ -7,6 +7,7 @@ import { NotificationCenter } from './NotificationCenter';
 import { WALLPAPERS, WallpaperOrbs } from './wallpapers';
 import { LiquidShader } from './LiquidShader';
 import { SpaceWallpaper } from './SpaceWallpaper';
+import { Live2DWallpaper } from './Live2DWallpaper';
 import { LockScreen } from './LockScreen';
 import { TerminalApp } from './apps/Terminal';
 import { NotepadApp } from './apps/Notepad';
@@ -64,16 +65,57 @@ function renderApp(appId: string, payload?: unknown) {
   }
 }
 
-function CustomAppView({ payload }: { payload?: { url?: string; isCustomApp?: boolean } }) {
-  if (!payload?.url) {
+class WindowErrorBoundary extends Component<
+  { children: ReactNode; appTitle?: string },
+  { hasError: boolean; errorMsg: string }
+> {
+  constructor(props: { children: ReactNode; appTitle?: string }) {
+    super(props);
+    this.state = { hasError: false, errorMsg: '' };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, errorMsg: error?.message || 'Unexpected application error' };
+  }
+
+  componentDidCatch(error: Error, info: ErrorInfo) {
+    console.error('Window app error:', error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex h-full w-full flex-col items-center justify-center gap-3 bg-zinc-950/90 p-6 text-center text-white">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-rose-500/15 text-rose-400">
+            <Icon name="XCircle" size={22} />
+          </div>
+          <div className="text-sm font-semibold">{this.props.appTitle || 'Application'} encountered an issue</div>
+          <div className="max-w-md text-xs text-white/50">{this.state.errorMsg}</div>
+          <button
+            onClick={() => this.setState({ hasError: false, errorMsg: '' })}
+            className="mt-1 rounded-lg bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white hover:bg-white/15 transition"
+          >
+            Reload App
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function CustomAppView({ payload }: { payload?: { url?: string; isCustomApp?: boolean; appInfo?: { url?: string; name?: string } } }) {
+  const rawUrl = payload?.url || payload?.appInfo?.url;
+  if (!rawUrl) {
     return <div className="flex h-full w-full items-center justify-center text-white/40 text-sm">Unable to load app.</div>;
   }
+  const src = rawUrl.startsWith('/api/proxy') ? rawUrl : `/api/proxy?url=${encodeURIComponent(rawUrl)}`;
   return (
-    <div className="h-full w-full min-w-0 min-h-0 bg-white">
+    <div className="h-full w-full min-w-0 min-h-0 bg-zinc-950">
       <iframe
-        src={payload.url}
+        src={src}
         className="h-full w-full border-0"
-        title="custom app"
+        title={payload?.appInfo?.name || 'custom app'}
         sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
       />
     </div>
@@ -122,6 +164,7 @@ export function Desktop() {
   const dateStr = time.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
 
   const customWallpaper = customWallpapers.find((c) => c.id === selectedCustomId);
+  const useLive2D = wallpaper === 'live2d' && !liteMode;
   const useShader = wallpaper === 'shader' && !liteMode;
   const useSpace = wallpaper === 'space' && !liteMode;
   const shaderOpacity = transparency / 100;
@@ -167,7 +210,7 @@ export function Desktop() {
       {/* Base wallpaper gradient */}
       <div
         className="absolute inset-0 animated-gradient"
-        style={{ background: WALLPAPERS[wallpaper].style }}
+        style={{ background: (WALLPAPERS[wallpaper] ?? WALLPAPERS.live2d).style }}
       />
 
       {/* Custom wallpaper image overlay */}
@@ -178,14 +221,17 @@ export function Desktop() {
         />
       )}
 
+      {/* 2D Interactive Aurora Silk Live Wallpaper (Default on initial startup) */}
+      {useLive2D && !customWallpaper && <Live2DWallpaper lite={false} />}
+
       {/* 3D Black Hole Raymarching Space live wallpaper */}
-      {useSpace && <SpaceWallpaper lite={false} preset={nebulaPreset} />}
+      {useSpace && !customWallpaper && <SpaceWallpaper lite={false} preset={nebulaPreset} />}
 
       {/* WebGL liquid shader overlay */}
-      {useShader && <LiquidShader lite={false} opacity={shaderOpacity} />}
+      {useShader && !customWallpaper && <LiquidShader lite={false} opacity={shaderOpacity} />}
 
       {/* Floating orbs */}
-      {!liteMode && !useShader && !useSpace && !customWallpaper && <WallpaperOrbs />}
+      {!liteMode && !useLive2D && !useShader && !useSpace && !customWallpaper && <WallpaperOrbs />}
 
       {/* ========================================================
           1. MAC DESKTOP SHELL: Top Menu Bar + Magnified Bottom Dock
@@ -404,9 +450,9 @@ export function Desktop() {
               <span>Torch</span>
             </button>
             <button
-              onClick={() => toggleAndroidQuick('dnd')}
+              onClick={() => toggleAndroidQuick('doNotDisturb')}
               className={`flex-1 py-1.5 rounded-xl text-[10px] font-medium flex items-center justify-center gap-1 transition ${
-                androidQuickSettings.dnd ? 'bg-rose-500/30 text-rose-300 ring-1 ring-rose-400/40' : 'bg-white/5 text-white/50'
+                androidQuickSettings.doNotDisturb ? 'bg-rose-500/30 text-rose-300 ring-1 ring-rose-400/40' : 'bg-white/5 text-white/50'
               }`}
             >
               <Icon name="Moon" size={12} />
@@ -908,7 +954,9 @@ export function Desktop() {
       <AnimatePresence>
         {windows.map((win) => (
           <WindowFrame key={win.id} win={win}>
-            {renderApp(win.appId, win.payload)}
+            <WindowErrorBoundary appTitle={win.title}>
+              {renderApp(win.appId, win.payload)}
+            </WindowErrorBoundary>
           </WindowFrame>
         ))}
       </AnimatePresence>

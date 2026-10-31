@@ -15,18 +15,29 @@ const DEFAULT_HOME = 'about:start';
 
 const SPEED_DIAL = [
   { label: 'DuckDuckGo', url: 'https://duckduckgo.com', icon: 'Search', desc: 'Privacy-focused Web Search' },
+  { label: 'jsDelivr CDN', url: 'https://www.jsdelivr.com', icon: 'Server', desc: 'Open Source CDN & GitHub Viewer' },
+  { label: 'GitHub', url: 'https://github.com', icon: 'GitBranch', desc: 'Developer Platform & Pages' },
   { label: 'Wikipedia', url: 'https://en.wikipedia.org', icon: 'FileText', desc: 'The Free Encyclopedia' },
-  { label: 'GitHub', url: 'https://github.com', icon: 'GitBranch', desc: 'Developer Platform' },
   { label: 'MDN Web Docs', url: 'https://developer.mozilla.org', icon: 'BookOpen', desc: 'Web Technologies' },
   { label: 'Archive.org', url: 'https://archive.org', icon: 'HardDrive', desc: 'Internet Wayback Machine' },
   { label: 'Hacker News', url: 'https://news.ycombinator.com', icon: 'Radio', desc: 'Tech & Engineering News' },
-  { label: 'SoundCloud Web', url: 'https://m.soundcloud.com', icon: 'Music', desc: 'Online Audio & Podcasts' },
   { label: 'Three.js Gallery', url: 'https://threejs.org', icon: 'Sparkles', desc: '3D WebGL Library' },
 ];
 
 function normalizeUrl(input: string): string {
   const v = input.trim();
   if (!v || v === 'about:start' || v === 'about:blank') return v;
+  // Support jsdelivr:owner/repo or gh:owner/repo
+  if (/^(jsdelivr|gh):/i.test(v)) {
+    const repoPath = v.replace(/^(jsdelivr|gh):\/+/i, '').replace(/^(jsdelivr|gh):/i, '');
+    const parts = repoPath.split('/');
+    if (parts.length >= 2) {
+      const owner = parts[0];
+      const repo = parts[1].replace(/\.git$/i, '');
+      const rest = parts.slice(2).join('/') || 'index.html';
+      return `https://cdn.jsdelivr.net/gh/${owner}/${repo}@latest/${rest}`;
+    }
+  }
   if (/^https?:\/\//i.test(v)) return v;
   if (/^[\w-]+(\.[\w-]+)+/.test(v)) return 'https://' + v;
   return 'https://duckduckgo.com/?q=' + encodeURIComponent(v);

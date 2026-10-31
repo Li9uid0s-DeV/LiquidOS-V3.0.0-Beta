@@ -31,7 +31,8 @@ const QUICK_PROMPTS = [
   { label: 'ウィンドウ整列', query: 'ウィンドウをきれいにスナップして' },
 ];
 
-export function AIAssistant() {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function AIAssistant(_props: { onLock?: () => void } = {}) {
   const {
     windows,
     openApp,

@@ -28,6 +28,7 @@ import {
 import { VirtualFolder, getInitialFileSystem, VirtualNode } from './fileSystem';
 
 export type Wallpaper =
+  | 'live2d'
   | 'space'
   | 'aurora'
   | 'sunset'
@@ -135,7 +136,7 @@ export interface OSContextValue {
 
   // App Store & Installed Apps
   installedApps: InstalledApp[];
-  installApp: (app: StoreApp) => void;
+  installApp: (app: Partial<StoreApp> & { name: string; icon: string; description: string; author: string; category: 'utilities' | 'games' }) => void;
   uninstallApp: (appId: string) => void;
   launchInstalledApp: (appId: string) => void;
   isInstalled: (appId: string) => boolean;
@@ -219,12 +220,12 @@ const INITIAL_TASKS: CalendarTask[] = [
   { id: 'task-3', title: 'Synthesize Ambient Space Harmonics', date: '2026-08-28', time: '11:00', category: 'personal', completed: false, priority: 'low' },
 ];
 
-const LS_KEY = 'liquid-os-v3-settings';
-const LS_APPS_KEY = 'liquid-os-v3-installed-apps';
-const LS_THEMES_KEY = 'liquid-os-v3-installed-themes';
-const LS_CURRENT_THEME_KEY = 'liquid-os-v3-current-theme';
-const LS_TASKS_KEY = 'liquid-os-v3-calendar-tasks';
-const LS_FS_KEY = 'liquid-os-v3-filesystem';
+const LS_KEY = 'liquid-os-v4.2-settings';
+const LS_APPS_KEY = 'liquid-os-v4.2-installed-apps';
+const LS_THEMES_KEY = 'liquid-os-v4.2-installed-themes';
+const LS_CURRENT_THEME_KEY = 'liquid-os-v4.2-current-theme';
+const LS_TASKS_KEY = 'liquid-os-v4.2-calendar-tasks';
+const LS_FS_KEY = 'liquid-os-v4.2-filesystem';
 
 function loadPersisted<T>(key: string, fallback: T): T {
   try {
@@ -237,7 +238,8 @@ function loadPersisted<T>(key: string, fallback: T): T {
 }
 
 export function OSProvider({ children }: { children: ReactNode }) {
-  const persistedSettings = loadPersisted<Record<string, unknown>>(LS_KEY, {});
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const persistedSettings = loadPersisted<Record<string, any>>(LS_KEY, {});
 
   const [windows, setWindows] = useState<WindowState[]>([]);
   const zCounter = useRef(60);
@@ -247,19 +249,14 @@ export function OSProvider({ children }: { children: ReactNode }) {
     loadPersisted<VirtualFolder>(LS_FS_KEY, getInitialFileSystem())
   );
 
-  const [wallpaper, setWallpaper] = useState<Wallpaper>(persistedSettings.wallpaper ?? 'space');
+  // Default to 'live2d' (2D Aurora Live Wallpaper) on initial startup instead of Black Hole ('space')
+  const [wallpaper, setWallpaper] = useState<Wallpaper>(persistedSettings.wallpaper ?? 'live2d');
   const [customWallpapers, setCustomWallpapers] = useState<CustomWallpaper[]>(persistedSettings.customWallpapers ?? []);
   const [selectedCustomId, setSelectedCustomId] = useState<string | null>(persistedSettings.selectedCustomId ?? null);
   const [theme, setTheme] = useState<Theme>(persistedSettings.theme ?? 'dark');
 
-  // Shell & Design Engines — Automated Mobile/Touch Matrix Detection
+  // Shell & Design Engines — Default to desktop 'windows' shell so all icons & taskbar are immediately accessible
   const [shellMode, setShellMode] = useState<ShellMode>(() => {
-    if (typeof window !== 'undefined') {
-      const isMobile =
-        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-        window.innerWidth < 768;
-      if (isMobile) return 'metro';
-    }
     return (persistedSettings.shellMode as ShellMode) ?? 'windows';
   });
   const [taskbarStyle, setTaskbarStyle] = useState<WindowsTaskbarStyle>(persistedSettings.taskbarStyle ?? 'modern');
@@ -687,7 +684,7 @@ export function OSProvider({ children }: { children: ReactNode }) {
         zIndex: zCounter.current,
         minimized: false,
         maximized: false,
-        payload: { appInfo: app },
+        payload: { appInfo: app, url: app.url, isCustomApp: Boolean(app.url) },
       };
       setWindows((ws) => [...ws, win]);
     },
@@ -791,7 +788,6 @@ export function OSProvider({ children }: { children: ReactNode }) {
           name: folderName,
           kind: 'folder',
           children: [],
-          createdAt: Date.now(),
         });
       }
       return clone;
@@ -909,15 +905,17 @@ export function OSProvider({ children }: { children: ReactNode }) {
 
   const toggleStart = useCallback(() => setStartOpen((v) => !v), []);
 
-  const installApp = useCallback((app: StoreApp) => {
+  const installApp = useCallback((app: Partial<StoreApp> & { name: string; icon: string; description: string; author: string; category: 'utilities' | 'games' }) => {
     playSound('notify');
     setInstalledApps((list) => {
-      if (list.some((a) => a.id === app.id)) return list;
+      const id = app.id || `custom-${Date.now()}`;
+      if (list.some((a) => a.id === id)) return list;
+      const appId = app.builtInAppId ?? (app.url ? `custom:${id}` : id);
       return [
         ...list,
         {
-          id: app.id,
-          appId: app.builtInAppId ?? app.id,
+          id,
+          appId,
           name: app.name,
           icon: app.icon,
           description: app.description,
@@ -925,6 +923,8 @@ export function OSProvider({ children }: { children: ReactNode }) {
           category: app.category,
           installedAt: Date.now(),
           builtInAppId: app.builtInAppId,
+          url: app.url,
+          isCustom: Boolean(app.url),
         },
       ];
     });

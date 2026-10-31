@@ -86,6 +86,9 @@ export interface NotificationItem {
   timestamp: number;
   icon: string;
   appId?: AppId;
+  app?: string;
+  time?: string;
+  unread?: boolean;
   read?: boolean;
 }
 
@@ -114,7 +117,7 @@ export interface UserProfile {
   name: string;
   avatar: string;
   password?: string;
-  createdAt: number;
+  createdAt?: number;
 }
 
 // Pre-configured App Store catalog (100% local, offline)
@@ -129,6 +132,7 @@ export interface StoreApp {
   size: string;
   version: string;
   builtInAppId?: AppId;
+  url?: string;
 }
 
 export const STORE_CATALOG: StoreApp[] = [
@@ -202,6 +206,7 @@ export const STORE_CATALOG: StoreApp[] = [
     rating: 4.7,
     size: '1.5 MB',
     version: '2.4.1',
+    builtInAppId: 'notepad',
   },
   {
     id: 'retro-2048',
@@ -213,6 +218,7 @@ export const STORE_CATALOG: StoreApp[] = [
     rating: 4.8,
     size: '950 KB',
     version: '2.0.0',
+    builtInAppId: 'game',
   },
   {
     id: 'retro-snake',
@@ -224,6 +230,7 @@ export const STORE_CATALOG: StoreApp[] = [
     rating: 4.6,
     size: '800 KB',
     version: '1.9.0',
+    builtInAppId: 'game',
   },
   {
     id: 'weather',
@@ -274,6 +281,7 @@ export interface InstalledApp {
   installedAt: number;
   isCustom?: boolean;
   builtInAppId?: AppId;
+  url?: string;
 }
 
 export interface StoreTheme {
@@ -294,7 +302,7 @@ export interface StoreTheme {
   config: {
     shellMode: ShellMode;
     designEngine: DesignEngine;
-    wallpaper: 'space' | 'aurora' | 'sunset' | 'ocean' | 'forest' | 'cosmic' | 'bloom' | 'shader';
+    wallpaper: 'live2d' | 'space' | 'aurora' | 'sunset' | 'ocean' | 'forest' | 'cosmic' | 'bloom' | 'shader';
     theme: 'dark' | 'light';
     blurAmount?: number;
     cornerRadius?: number;
@@ -400,7 +408,7 @@ export const STORE_THEMES: StoreTheme[] = [
     config: {
       shellMode: 'windows',
       designEngine: 'windows-mica',
-      wallpaper: 'cosmic',
+      wallpaper: 'live2d',
       theme: 'dark',
       blurAmount: 20,
       cornerRadius: 14,

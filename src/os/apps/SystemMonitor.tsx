@@ -103,7 +103,6 @@ export function SystemMonitorApp() {
         }
       }
 
-      lastTime = now;
       raf = requestAnimationFrame(tick);
     };
 
