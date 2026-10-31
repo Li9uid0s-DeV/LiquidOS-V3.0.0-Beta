@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Icon } from '../Icon';
-import { useOS } from '../OSContext';
+import { useOS, AuroraColor, Wallpaper } from '../OSContext';
 import { AppId, ShellMode } from '../types';
 
 interface Message {
@@ -16,13 +16,12 @@ interface Message {
 }
 
 const TEMPLATES = [
-  { label: '🎨 Zorin OSにする', prompt: 'UIをZorin OS 17 Proのエレガンススタイルに変更して' },
-  { label: '🔥 HyperOS 3を適用', prompt: 'MIUIx / HyperOS 3のフラッグシップテーマを適用して' },
-  { label: '⚡ Windows 8 Metro', prompt: 'Windows 8のメトロ・ライブタイルUIに切り替えて' },
-  { label: '🎮 ゲームを起動', prompt: 'Cosmic Velocity 3D レーサーを起動して' },
-  { label: '🌦️ 天気予報を確認', prompt: 'Cosmic Weatherアプリを開いて天気をチェックして' },
-  { label: '⏰ アラームを設定', prompt: 'Clock & Alarmsアプリを開いて' },
-  { label: '💻 システム診断', prompt: 'Task ManagerとSystem Monitorを開いてCPUとメモリを監視して' },
+  { label: 'オーロラをエメラルドに', prompt: 'オーロラのカラーをエメラルド＆スカイに変更して' },
+  { label: 'ガラスの湾曲を強く', prompt: '3Dガラスの湾曲度とプルプル感を強めにして' },
+  { label: 'ゲームを起動', prompt: 'ゲームアプリを起動して' },
+  { label: 'macOSモードにする', prompt: 'レイアウトをmacOSに切り替えて' },
+  { label: 'スリープ画面にする', prompt: '画面をスリープにして' },
+  { label: 'TypeScriptの書き方', prompt: 'TypeScriptで配列の重複を消す簡潔なコードを教えて' },
 ];
 
 export function AIAssistantApp() {
@@ -31,50 +30,71 @@ export function AIAssistantApp() {
     setShellMode,
     applyThemeConfig,
     setTheme,
+    setWallpaper,
+    setAuroraColor,
+    setGlassCurvature,
+    setGlassWobble,
+    lockSystem,
+    snapAllWindows5050,
     playSound,
-    addNotification,
-    triggerDynamicIsland,
   } = useOS();
 
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'msg-welcome',
       sender: 'assistant',
-      text: 'こんにちは。Liquid Copilotです。\n\nテーマの切り替え（Zorin OS、Windows 11/10/Vista/XP、HyperOSなど）やアプリの起動、各種タスクをお手伝いします。ご指示を入力してください。',
+      text: 'こんにちは。質問や調べもの、プログラミング、計算、またはOSの設定・アプリ起動など何でも話しかけてください。',
       timestamp: Date.now(),
     },
   ]);
 
   const [input, setInput] = useState('');
   const [isThinking, setIsThinking] = useState(false);
-  const [model, setModel] = useState('gemini-3.8-flash');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isThinking]);
 
-  // Execute an action returned by AI
   const executeAction = useCallback(
     (act: { type: string; target?: string; label?: string }) => {
       playSound('open');
       if (act.type === 'open_app' && act.target) {
         openApp(act.target as AppId);
-        triggerDynamicIsland(act.label || `Launched ${act.target}`, 'AI Studio Action', 'Bot');
       } else if (act.type === 'set_shell' && act.target) {
         setShellMode(act.target as ShellMode);
-        addNotification({
-          title: 'Shell Updated',
-          message: `Switched shell layout to ${act.target}.`,
-          icon: 'SlidersHorizontal',
-        });
       } else if (act.type === 'apply_theme' && act.target) {
         applyThemeConfig(act.target);
       } else if (act.type === 'set_theme' && act.target) {
         setTheme(act.target === 'light' ? 'light' : 'dark');
+      } else if (act.type === 'set_wallpaper' && act.target) {
+        setWallpaper(act.target as Wallpaper);
+      } else if (act.type === 'set_aurora' && act.target) {
+        setWallpaper('live2d');
+        setAuroraColor(act.target as AuroraColor);
+      } else if (act.type === 'set_glass' && act.target) {
+        const val = Number(act.target) || 75;
+        setGlassCurvature(val);
+        setGlassWobble(Math.min(100, val + 10));
+      } else if (act.type === 'lock_system') {
+        lockSystem();
+      } else if (act.type === 'snap_windows') {
+        snapAllWindows5050();
       }
     },
-    [openApp, setShellMode, applyThemeConfig, setTheme, playSound, addNotification, triggerDynamicIsland]
+    [
+      openApp,
+      setShellMode,
+      applyThemeConfig,
+      setTheme,
+      setWallpaper,
+      setAuroraColor,
+      setGlassCurvature,
+      setGlassWobble,
+      lockSystem,
+      snapAllWindows5050,
+      playSound,
+    ]
   );
 
   const handleSend = async (customPrompt?: string) => {
@@ -99,7 +119,7 @@ export function AIAssistantApp() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: textToSend,
-          history: messages.slice(-8).map((m) => ({
+          history: messages.slice(-10).map((m) => ({
             role: m.sender === 'user' ? 'user' : 'model',
             content: m.text,
           })),
@@ -114,60 +134,24 @@ export function AIAssistantApp() {
       const assistantMsg: Message = {
         id: `msg-${Date.now() + 1}`,
         sender: 'assistant',
-        text: data.reply || '応答を受信できませんでした。',
+        text: data.reply || '応答を取得できませんでした。',
         timestamp: Date.now(),
-        action: data.action,
+        action: data.action && data.action.type !== 'none' ? data.action : undefined,
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
 
-      // If action is provided, automatically trigger or let user click
       if (data.action && data.action.type !== 'none') {
-        // Auto-run non-destructive theme / navigation action if high confidence
-        if (['apply_theme', 'open_app', 'set_shell'].includes(data.action.type)) {
-          executeAction(data.action);
-        }
+        executeAction(data.action);
       }
     } catch {
-      // Offline fallback smart responder
-      let fallbackText = `承知いたしました。「${textToSend}」の処理を実行します。`;
-      let fallbackAction: { type: string; target?: string; label?: string } | undefined;
-
-      const lower = textToSend.toLowerCase();
-      if (lower.includes('zorin')) {
-        fallbackText = 'Zorin OS 17 ProのエレガントなLinuxシェルを適用しました！';
-        fallbackAction = { type: 'set_shell', target: 'zorin', label: 'Zorin OS Shell' };
-        executeAction(fallbackAction);
-      } else if (lower.includes('hyperos') || lower.includes('miuix')) {
-        fallbackText = 'HyperOS 3 / MIUIx フラッグシップテーマを適用しました！スクワークルアイコンと立体感のある深度時計をお楽しみください。';
-        fallbackAction = { type: 'apply_theme', target: 'hyperos-miuix', label: 'HyperOS 3 Theme' };
-        executeAction(fallbackAction);
-      } else if (lower.includes('windows 8') || lower.includes('metro') || lower.includes('メトロ')) {
-        fallbackText = 'Windows 8のメトロ・ライブタイル全画面モードに切り替えました！カードをスクロールしてアプリを起動できます。';
-        fallbackAction = { type: 'set_shell', target: 'windows8', label: 'Windows 8 Metro' };
-        executeAction(fallbackAction);
-      } else if (lower.includes('game') || lower.includes('ゲーム') || lower.includes('velocity')) {
-        fallbackText = 'Cosmic Velocity 3D レーサーを起動しました！タッチ操作または矢印キーで操作可能です。';
-        fallbackAction = { type: 'open_app', target: 'game', label: 'Cosmic Velocity' };
-        executeAction(fallbackAction);
-      } else if (lower.includes('weather') || lower.includes('天気')) {
-        fallbackText = 'Cosmic Weather 予報アプリを起動しました！リアルタイム気象レーダーと7日間予報を表示します。';
-        fallbackAction = { type: 'open_app', target: 'weather', label: 'Cosmic Weather' };
-        executeAction(fallbackAction);
-      } else if (lower.includes('clock') || lower.includes('時計') || lower.includes('アラーム')) {
-        fallbackText = 'Clock & Alarms アプリを起動しました！世界時計、ストップウォッチ、タイマーをお使いいただけます。';
-        fallbackAction = { type: 'open_app', target: 'clock', label: 'Clock & Alarms' };
-        executeAction(fallbackAction);
-      }
-
       setMessages((prev) => [
         ...prev,
         {
           id: `msg-${Date.now() + 1}`,
           sender: 'assistant',
-          text: fallbackText,
+          text: '通信エラーが発生しました。もう一度お試しください。',
           timestamp: Date.now(),
-          action: fallbackAction,
         },
       ]);
     } finally {
@@ -181,67 +165,47 @@ export function AIAssistantApp() {
       {
         id: 'msg-welcome',
         sender: 'assistant',
-        text: 'チャット履歴を消去しました。何かお手伝いできることはありますか？',
+        text: 'チャット履歴をクリアしました。何でもお気軽にお尋ねください。',
         timestamp: Date.now(),
       },
     ]);
   };
 
   return (
-    <div className="h-full w-full flex flex-col bg-slate-950 text-white select-none overflow-hidden">
-      {/* App Header */}
-      <div className="h-14 px-4 bg-slate-950/80 border-b border-white/[0.06] flex items-center justify-between shrink-0 backdrop-blur-xl">
+    <div className="h-full w-full flex flex-col bg-black/25 backdrop-blur-2xl text-white select-none overflow-hidden">
+      {/* Header */}
+      <div className="h-13 px-5 bg-white/[0.02] border-b border-white/[0.06] flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-400 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/10">
-            <Icon name="Bot" size={17} className="text-white" />
+          <div className="w-8 h-8 rounded-xl glass-jelly flex items-center justify-center text-sky-300">
+            <Icon name="Bot" size={16} />
           </div>
-          <div>
-            <div className="text-sm font-semibold text-white flex items-center gap-2">
-              Liquid Copilot
-              <span className="text-[10px] text-white/40 font-mono">
-                {model}
-              </span>
-            </div>
-            <div className="text-[10px] text-white/40">Intelligent OS Assistant & Automation</div>
-          </div>
+          <span className="text-sm font-semibold text-white">AI アシスタント</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setModel(model === 'gemini-3.8-flash' ? 'gemini-2.5-pro' : 'gemini-3.8-flash')}
-            className="px-2.5 py-1 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-xs text-white/60 font-mono transition border border-white/[0.06]"
-            title="Toggle Engine"
-          >
-            {model}
-          </button>
-          <button
-            onClick={clearChat}
-            className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-white/50 hover:text-white transition border border-white/[0.06]"
-            title="Clear Chat"
-          >
-            <Icon name="Trash2" size={14} />
-          </button>
-        </div>
+        <button
+          onClick={clearChat}
+          className="p-2 rounded-xl glass-jelly text-white/70 hover:text-white"
+          title="履歴をクリア"
+        >
+          <Icon name="Trash2" size={14} />
+        </button>
       </div>
 
-      {/* Quick Prompts Chips Carousel */}
-      <div className="p-2.5 border-b border-white/[0.04] bg-white/[0.01] flex items-center gap-1.5 overflow-x-auto scrollbar-none shrink-0">
-        <span className="text-[10px] font-medium text-white/40 uppercase tracking-wider px-2 shrink-0">
-          Suggested:
-        </span>
+      {/* Quick Chips */}
+      <div className="px-4 py-2.5 border-b border-white/[0.05] flex items-center gap-2 overflow-x-auto scrollbar-none shrink-0">
         {TEMPLATES.map((t, idx) => (
           <button
             key={idx}
             onClick={() => handleSend(t.prompt)}
-            className="px-3 py-1.5 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] text-xs text-white/70 hover:text-white whitespace-nowrap transition border border-white/[0.05] active:scale-95 shrink-0"
+            className="px-3 py-1.5 rounded-xl glass-jelly text-xs text-white/85 hover:text-white whitespace-nowrap shrink-0"
           >
             {t.label}
           </button>
         ))}
       </div>
 
-      {/* Chat Messages Stream */}
-      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
+      {/* Chat Messages */}
+      <div className="flex-1 overflow-y-auto p-5 space-y-4">
         {messages.map((m) => {
           const isUser = m.sender === 'user';
           return (
@@ -250,58 +214,44 @@ export function AIAssistantApp() {
               className={`flex gap-3 max-w-3xl ${isUser ? 'ml-auto justify-end' : 'mr-auto justify-start'}`}
             >
               {!isUser && (
-                <div className="w-8 h-8 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0">
-                  <Icon name="Bot" size={15} className="text-cyan-400" />
+                <div className="w-8 h-8 rounded-xl glass-jelly flex items-center justify-center shrink-0 text-sky-300">
+                  <Icon name="Bot" size={15} />
                 </div>
               )}
 
               <div
-                className={`rounded-2xl p-4 text-sm leading-relaxed ${
+                className={`rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                   isUser
-                    ? 'bg-cyan-500 text-black font-medium rounded-tr-none shadow-md shadow-cyan-500/10'
-                    : 'bg-white/[0.03] border border-white/[0.06] text-white/90 rounded-tl-none backdrop-blur-xl shadow-lg'
+                    ? 'glass-jelly bg-sky-500/25 text-white font-medium'
+                    : 'glass-panel text-white/95'
                 }`}
               >
-                <div className="whitespace-pre-wrap">{m.text}</div>
+                <div className="whitespace-pre-wrap select-text">{m.text}</div>
 
-                {/* Optional interactive action button attached to message */}
                 {m.action && m.action.type !== 'none' && (
-                  <div className="mt-3 pt-2.5 border-t border-white/[0.06] flex items-center gap-2">
+                  <div className="mt-3 pt-2.5 border-t border-white/10 flex items-center">
                     <button
                       onClick={() => executeAction(m.action!)}
-                      className="px-3 py-1.5 rounded-xl bg-cyan-400 text-black font-semibold text-xs flex items-center gap-1.5 hover:bg-cyan-300 transition shadow-sm active:scale-95"
+                      className="px-3.5 py-1.5 rounded-xl glass-jelly text-sky-300 font-semibold text-xs flex items-center gap-1.5"
                     >
-                      <Icon name="Zap" size={12} />
-                      <span>{m.action.label || 'Execute Action'}</span>
+                      <Icon name="Sparkles" size={12} />
+                      <span>{m.action.label || '実行する'}</span>
                     </button>
-                    <span className="text-[10px] text-white/40 font-mono">
-                      Type: {m.action.type}
-                    </span>
                   </div>
                 )}
-
-                <div className={`text-[10px] mt-1.5 ${isUser ? 'text-black/50' : 'text-white/30'} text-right font-mono`}>
-                  {new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </div>
               </div>
-
-              {isUser && (
-                <div className="w-8 h-8 rounded-full bg-white/[0.05] flex items-center justify-center shrink-0 border border-white/[0.08]">
-                  <Icon name="User" size={15} className="text-white/80" />
-                </div>
-              )}
             </div>
           );
         })}
 
         {isThinking && (
           <div className="flex gap-3 max-w-xl">
-            <div className="w-8 h-8 rounded-full bg-white/[0.05] border border-white/[0.08] flex items-center justify-center shrink-0">
-              <Icon name="Bot" size={15} className="text-cyan-400 animate-pulse" />
+            <div className="w-8 h-8 rounded-xl glass-jelly flex items-center justify-center shrink-0 text-sky-300">
+              <Icon name="Bot" size={15} className="animate-pulse" />
             </div>
-            <div className="p-3.5 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center gap-2 text-xs text-white/70">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-              <span>Thinking...</span>
+            <div className="px-4 py-3 rounded-2xl glass-panel flex items-center gap-2 text-xs text-white/80">
+              <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
+              <span>考え中...</span>
             </div>
           </div>
         )}
@@ -309,33 +259,32 @@ export function AIAssistantApp() {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Composer (Touch Friendly) */}
-      <div className="p-3 sm:p-4 border-t border-white/[0.06] bg-slate-950/70 backdrop-blur-xl shrink-0">
+      {/* Input Composer */}
+      <div className="p-3.5 border-t border-white/[0.06] bg-white/[0.02] shrink-0">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             handleSend();
           }}
-          className="flex items-center gap-2 max-w-4xl mx-auto"
+          className="flex items-center gap-2.5 max-w-4xl mx-auto"
         >
-          <div className="flex-1 flex items-center gap-2.5 bg-white/[0.03] border border-white/[0.08] rounded-2xl px-4 py-2.5 focus-within:border-white/25 focus-within:bg-white/[0.05] transition">
-            <Icon name="Sparkles" size={15} className="text-white/40" />
+          <div className="flex-1 flex items-center gap-2.5 glass-panel rounded-2xl px-4 py-2.5 focus-within:border-sky-400/50 transition">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask anything or control OS (e.g. 'Zorin OSにして', 'ゲームを起動', '天気を教えて')..."
-              className="flex-1 bg-transparent text-sm text-white placeholder-white/30 outline-none"
+              placeholder="質問、コード作成、計算、OSの操作などを入力..."
+              className="flex-1 bg-transparent text-sm text-white placeholder-white/40 outline-none"
             />
           </div>
 
           <button
             type="submit"
             disabled={!input.trim() || isThinking}
-            className="h-11 px-5 rounded-2xl bg-white/10 hover:bg-white/20 text-white font-semibold text-sm transition flex items-center gap-1.5 border border-white/[0.08] disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+            className="h-10 px-5 rounded-2xl glass-jelly text-white font-semibold text-xs flex items-center gap-1.5 disabled:opacity-40"
           >
-            <Icon name="Send" size={14} />
-            <span className="hidden sm:inline">Send</span>
+            <Icon name="Send" size={14} className="text-sky-300" />
+            <span>送信</span>
           </button>
         </form>
       </div>

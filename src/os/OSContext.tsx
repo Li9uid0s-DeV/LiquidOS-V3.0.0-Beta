@@ -39,6 +39,7 @@ export type Wallpaper =
   | 'shader';
 
 export type Theme = 'dark' | 'light';
+export type AuroraColor = 'cyan-violet' | 'emerald-sky' | 'rose-gold' | 'ocean-blue' | 'sunset-magenta';
 
 export interface CustomWallpaper {
   id: string;
@@ -93,7 +94,7 @@ export interface OSContextValue {
   nebulaPreset: NebulaPreset;
   setNebulaPreset: (preset: NebulaPreset) => void;
 
-  // Fine-grain sliders
+  // Fine-grain sliders & 3D Liquid Glass Physics
   blurAmount: number;
   setBlurAmount: (v: number) => void;
   cornerRadius: number;
@@ -102,6 +103,22 @@ export interface OSContextValue {
   setTransparency: (v: number) => void;
   animSpeed: number;
   setAnimSpeed: (v: number) => void;
+  glassCurvature: number;
+  setGlassCurvature: (v: number) => void;
+  glassSpecular: number;
+  setGlassSpecular: (v: number) => void;
+  glassWobble: number;
+  setGlassWobble: (v: number) => void;
+
+  // 2D Aurora Live Wallpaper Settings
+  auroraColor: AuroraColor;
+  setAuroraColor: (c: AuroraColor) => void;
+  auroraSpeed: number;
+  setAuroraSpeed: (v: number) => void;
+  auroraIntensity: number;
+  setAuroraIntensity: (v: number) => void;
+  auroraParticles: boolean;
+  setAuroraParticles: (v: boolean) => void;
 
   quickSettings: { wifi: boolean; bluetooth: boolean; darkMode: boolean };
   toggleQuick: (key: 'wifi' | 'bluetooth' | 'darkMode') => void;
@@ -280,11 +297,20 @@ export function OSProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // Sliders
+  // Sliders & 3D Glass Physics
   const [blurAmount, setBlurAmount] = useState<number>(persistedSettings.blurAmount ?? 24);
-  const [cornerRadius, setCornerRadius] = useState<number>(persistedSettings.cornerRadius ?? 16);
-  const [transparency, setTransparency] = useState<number>(persistedSettings.transparency ?? 75);
+  const [cornerRadius, setCornerRadius] = useState<number>(persistedSettings.cornerRadius ?? 18);
+  const [transparency, setTransparency] = useState<number>(persistedSettings.transparency ?? 78);
   const [animSpeed, setAnimSpeed] = useState<number>(persistedSettings.animSpeed ?? 1.0);
+  const [glassCurvature, setGlassCurvature] = useState<number>(persistedSettings.glassCurvature ?? 32);
+  const [glassSpecular, setGlassSpecular] = useState<number>(persistedSettings.glassSpecular ?? 75);
+  const [glassWobble, setGlassWobble] = useState<number>(persistedSettings.glassWobble ?? 75);
+
+  // Aurora Live Wallpaper Controls
+  const [auroraColor, setAuroraColor] = useState<AuroraColor>(persistedSettings.auroraColor ?? 'cyan-violet');
+  const [auroraSpeed, setAuroraSpeed] = useState<number>(persistedSettings.auroraSpeed ?? 1.0);
+  const [auroraIntensity, setAuroraIntensity] = useState<number>(persistedSettings.auroraIntensity ?? 78);
+  const [auroraParticles, setAuroraParticles] = useState<boolean>(persistedSettings.auroraParticles ?? true);
 
   const [quickSettings, setQuickSettings] = useState<{ wifi: boolean; bluetooth: boolean; darkMode: boolean }>(
     persistedSettings.quickSettings ?? { wifi: true, bluetooth: false, darkMode: true }
@@ -442,7 +468,10 @@ export function OSProvider({ children }: { children: ReactNode }) {
     document.documentElement.style.setProperty('--theme-blur', `${blurAmount}px`);
     document.documentElement.style.setProperty('--theme-opacity', `${(100 - transparency) / 100}`);
     document.documentElement.style.setProperty('--theme-radius', `${cornerRadius}px`);
-  }, [blurAmount, transparency, cornerRadius]);
+    document.documentElement.style.setProperty('--glass-curvature', `${glassCurvature}px`);
+    document.documentElement.style.setProperty('--glass-specular', `${glassSpecular / 100}`);
+    document.documentElement.style.setProperty('--glass-wobble', `${glassWobble / 100}`);
+  }, [blurAmount, transparency, cornerRadius, glassCurvature, glassSpecular, glassWobble]);
 
   // Persist Settings
   useEffect(() => {
@@ -462,6 +491,13 @@ export function OSProvider({ children }: { children: ReactNode }) {
           cornerRadius,
           transparency,
           animSpeed,
+          glassCurvature,
+          glassSpecular,
+          glassWobble,
+          auroraColor,
+          auroraSpeed,
+          auroraIntensity,
+          auroraParticles,
           quickSettings,
           liteMode,
           taskbarAlign,
@@ -486,6 +522,13 @@ export function OSProvider({ children }: { children: ReactNode }) {
     cornerRadius,
     transparency,
     animSpeed,
+    glassCurvature,
+    glassSpecular,
+    glassWobble,
+    auroraColor,
+    auroraSpeed,
+    auroraIntensity,
+    auroraParticles,
     quickSettings,
     liteMode,
     taskbarAlign,
@@ -646,13 +689,13 @@ export function OSProvider({ children }: { children: ReactNode }) {
       playSound('open');
       const storeItem = STORE_CATALOG.find((s) => s.id === appId);
       if (storeItem?.builtInAppId) {
-        openApp(storeItem.builtInAppId);
+        openApp(storeItem.builtInAppId, { payload: { gameId: storeItem.id } });
         return;
       }
       const app = installedApps.find((a) => a.appId === appId || a.id === appId);
       if (!app) return;
       if (app.builtInAppId) {
-        openApp(app.builtInAppId);
+        openApp(app.builtInAppId, { payload: { gameId: app.id } });
         return;
       }
       const existing = windows.find((w) => w.appId === app.appId);
@@ -1105,6 +1148,20 @@ export function OSProvider({ children }: { children: ReactNode }) {
     setTransparency,
     animSpeed,
     setAnimSpeed,
+    glassCurvature,
+    setGlassCurvature,
+    glassSpecular,
+    setGlassSpecular,
+    glassWobble,
+    setGlassWobble,
+    auroraColor,
+    setAuroraColor,
+    auroraSpeed,
+    setAuroraSpeed,
+    auroraIntensity,
+    setAuroraIntensity,
+    auroraParticles,
+    setAuroraParticles,
     quickSettings,
     toggleQuick,
     androidQuickSettings,

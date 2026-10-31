@@ -1,6 +1,6 @@
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 
 interface ChatMessage {
   role: 'user' | 'assistant' | 'model';
@@ -9,142 +9,280 @@ interface ChatMessage {
 }
 
 interface ActionPayload {
-  type: 'open_app' | 'set_shell' | 'set_theme' | 'apply_theme' | 'snap_windows' | 'play_music' | 'none';
+  type:
+    | 'open_app'
+    | 'set_shell'
+    | 'set_theme'
+    | 'apply_theme'
+    | 'set_wallpaper'
+    | 'set_aurora'
+    | 'set_glass'
+    | 'lock_system'
+    | 'snap_windows'
+    | 'none';
   target?: string;
   label?: string;
 }
 
-function getFallbackResponse(message: string): { reply: string; action: ActionPayload | null; model: string } {
-  const q = (message || '').toLowerCase();
+function evaluateSafeMath(expr: string): number | null {
+  const cleaned = expr
+    .replace(/×/g, '*')
+    .replace(/÷/g, '/')
+    .replace(/＋/g, '+')
+    .replace(/－/g, '-')
+    .replace(/[^0-9+\-*/().%\s]/g, '')
+    .trim();
+  if (!cleaned || !/[0-9]/.test(cleaned) || !/[+\-*/%]/.test(cleaned)) return null;
+  try {
+    const val = Function(`"use strict"; return (${cleaned});`)();
+    return typeof val === 'number' && Number.isFinite(val) ? val : null;
+  } catch {
+    return null;
+  }
+}
 
-  // App launch intents
-  if (q.includes('browser') || q.includes('web') || q.includes('ブラウザ') || q.includes('ネット') || q.includes('インターネット')) {
+function getIntelligentLocalResponse(
+  message: string
+): { reply: string; action: ActionPayload | null; model: string } {
+  const raw = (message || '').trim();
+  const q = raw.toLowerCase();
+
+  // 1. Aurora customization
+  if (q.includes('オーロラ') || q.includes('aurora')) {
+    if (q.includes('エメラルド') || q.includes('emerald') || q.includes('緑')) {
+      return {
+        reply: 'オーロラ背景を「エメラルド & スカイ」に切り替えました。',
+        action: { type: 'set_aurora', target: 'emerald-sky', label: 'エメラルドを適用' },
+        model: 'assistant',
+      };
+    }
+    if (q.includes('ローズ') || q.includes('rose') || q.includes('ピンク') || q.includes('ゴールド')) {
+      return {
+        reply: 'オーロラ背景を「ローズ & アンバー」に切り替えました。',
+        action: { type: 'set_aurora', target: 'rose-gold', label: 'ローズを適用' },
+        model: 'assistant',
+      };
+    }
+    if (q.includes('オーシャン') || q.includes('ocean') || q.includes('青') || q.includes('ブルー')) {
+      return {
+        reply: 'オーロラ背景を「ディープオーシャン」に切り替えました。',
+        action: { type: 'set_aurora', target: 'ocean-blue', label: 'オーシャンを適用' },
+        model: 'assistant',
+      };
+    }
+    if (q.includes('サンセット') || q.includes('マゼンタ') || q.includes('sunset') || q.includes('紫')) {
+      return {
+        reply: 'オーロラ背景を「マゼンタ & サンセット」に切り替えました。',
+        action: { type: 'set_aurora', target: 'sunset-magenta', label: 'サンセットを適用' },
+        model: 'assistant',
+      };
+    }
     return {
-      reply: 'Liquid Browserを起動します。高速プロキシエンジン（Scramjet / Ultraviolet）とブックマークが利用可能です。',
+      reply: '2D オーロラライブ背景を適用しました。設定アプリの「オーロラ背景」から色や揺らぎ速度も細かく調整できます。',
+      action: { type: 'set_aurora', target: 'cyan-violet', label: 'オーロラ背景を適用' },
+      model: 'assistant',
+    };
+  }
+
+  // 2. 3D Glass Curvature / Jelly Wobble
+  if (q.includes('湾曲') || q.includes('プルプル') || (q.includes('ガラス') && (q.includes('強') || q.includes('立体')))) {
+    return {
+      reply: '3Dガラスのレンズ湾曲度とプルプル弾性を高めに設定しました。設定アプリからスライダーでさらに細かく調整できます。',
+      action: { type: 'set_glass', target: '78', label: '3Dガラスを強化' },
+      model: 'assistant',
+    };
+  }
+
+  // 3. Sleep / Lock screen
+  if (q.includes('スリープ') || q.includes('ロック') || q.includes('sleep') || q.includes('lock')) {
+    return {
+      reply: 'スリープ画面を起動します。画面をタップすると解除できます。',
+      action: { type: 'lock_system', label: 'スリープにする' },
+      model: 'assistant',
+    };
+  }
+
+  // 4. App Launches
+  if (q.includes('設定') || q.includes('settings')) {
+    return {
+      reply: '設定アプリを開きます。3Dガラス造形やオーロラ背景、レイアウトを調整できます。',
+      action: { type: 'open_app', target: 'settings', label: '設定を開く' },
+      model: 'assistant',
+    };
+  }
+  if (q.includes('browser') || q.includes('ブラウザ') || q.includes('web') || q.includes('検索') || q.includes('ネット')) {
+    return {
+      reply: 'ブラウザを起動します。プロキシ経由であらゆるWebサイトやjsDelivrページを閲覧できます。',
       action: { type: 'open_app', target: 'browser', label: 'ブラウザを開く' },
-      model: 'local-copilot',
+      model: 'assistant',
     };
   }
-  if (q.includes('music') || q.includes('synth') || q.includes('音楽') || q.includes('曲') || q.includes('再生')) {
+  if (q.includes('music') || q.includes('synth') || q.includes('音楽') || q.includes('曲')) {
     return {
-      reply: 'Monochrome Musicプレイヤーを開きます。Hi-Fiロスレス音楽と同期歌詞をお楽しみください。',
-      action: { type: 'open_app', target: 'synth', label: '音楽を再生' },
-      model: 'local-copilot',
+      reply: 'ミュージックプレイヤーを起動します。',
+      action: { type: 'open_app', target: 'synth', label: '音楽を開く' },
+      model: 'assistant',
     };
   }
-  if (q.includes('terminal') || q.includes('cli') || q.includes('ターミナル') || q.includes('コマンド')) {
+  if (q.includes('terminal') || q.includes('ターミナル') || q.includes('コマンド')) {
     return {
-      reply: 'Liquid Terminalを起動します。シェルコマンドやシステム診断が可能です。',
+      reply: 'ターミナルを起動します。',
       action: { type: 'open_app', target: 'terminal', label: 'ターミナルを開く' },
-      model: 'local-copilot',
+      model: 'assistant',
     };
   }
-  if (q.includes('store') || q.includes('ストア') || q.includes('ダウンロード') || q.includes('アプリ')) {
+  if (q.includes('store') || q.includes('ストア')) {
     return {
-      reply: 'App Storeを開きます。新しいアプリやVista/XPなどのカスタムテーマをダウンロード・適用できます。',
+      reply: 'アプリストアを起動します。',
       action: { type: 'open_app', target: 'appstore', label: 'ストアを開く' },
-      model: 'local-copilot',
+      model: 'assistant',
     };
   }
-  if (q.includes('calc') || q.includes('電卓') || q.includes('計算')) {
+  if (q.includes('game') || q.includes('ゲーム') || q.includes('2048') || q.includes('snake') || q.includes('スネーク') || q.includes('ブロック崩し') || q.includes('迷路')) {
     return {
-      reply: 'Calculator Proを起動します。科学計算とメモリレジスタが利用できます。',
-      action: { type: 'open_app', target: 'calculator', label: '電卓を開く' },
-      model: 'local-copilot',
+      reply: 'ゲームアプリを起動します。Velocity 3D、3D Maze、2048 Glass、Neon Snake、Glass Breakerの5種類から選んで遊べます。',
+      action: { type: 'open_app', target: 'game', label: 'ゲームを開く' },
+      model: 'assistant',
     };
   }
-  if (q.includes('game') || q.includes('ゲーム') || q.includes('宇宙') || q.includes('3d') || q.includes('レース')) {
+  if (q.includes('天気') || q.includes('weather')) {
     return {
-      reply: '3D Arcadium Engine / Cosmic Velocityを起動します。Three.jsによる60FPSの宇宙レースをお楽しみください。',
-      action: { type: 'open_app', target: 'game', label: 'ゲームを起動' },
-      model: 'local-copilot',
+      reply: '天気アプリを起動します。',
+      action: { type: 'open_app', target: 'weather', label: '天気を開く' },
+      model: 'assistant',
+    };
+  }
+  if (q.includes('時計') || q.includes('アラーム') || q.includes('タイマー') || q.includes('clock')) {
+    return {
+      reply: '時計・タイマーアプリを起動します。',
+      action: { type: 'open_app', target: 'clock', label: '時計を開く' },
+      model: 'assistant',
+    };
+  }
+  if (q.includes('メモ') || q.includes('notepad') || q.includes('ノート')) {
+    return {
+      reply: 'メモ帳を起動します。',
+      action: { type: 'open_app', target: 'notepad', label: 'メモ帳を開く' },
+      model: 'assistant',
+    };
+  }
+  if (q.includes('ファイル') || q.includes('explorer') || q.includes('フォルダ')) {
+    return {
+      reply: 'ファイルエクスプローラーを起動します。',
+      action: { type: 'open_app', target: 'explorer', label: 'ファイルを開く' },
+      model: 'assistant',
     };
   }
 
-  // Theme & Shell change intents
-  if (q.includes('xp') || q.includes('ルナ') || q.includes('luna')) {
+  // 5. Layouts / Shells
+  if (q.includes('mac') || q.includes('マック')) {
     return {
-      reply: 'Windows XP ルナ・クラシックテーマを適用します！ロイヤルブルータスクバーと懐かしのBliss草原デスクトップへ切り替えます。',
-      action: { type: 'apply_theme', target: 'xp-luna', label: 'XPテーマを適用' },
-      model: 'local-copilot',
-    };
-  }
-  if (q.includes('vista') || q.includes('ビスタ') || q.includes('aero') || q.includes('エアロ')) {
-    return {
-      reply: 'Windows Vista アルティメット・エアロテーマを適用します！半透明エアログラスと、リアルタイム動作するアナログ時計＆CPUメーターガジェットが起動します。',
-      action: { type: 'apply_theme', target: 'vista-aero', label: 'Vista Aeroを適用' },
-      model: 'local-copilot',
-    };
-  }
-  if (q.includes('10') || q.includes('win10') || q.includes('windows 10')) {
-    return {
-      reply: 'Windows 10 フルエント・ダークテーマを適用します。Cortana検索とライブタイルメニューへ切り替えます。',
-      action: { type: 'apply_theme', target: 'win10-fluent', label: 'Win10テーマを適用' },
-      model: 'local-copilot',
-    };
-  }
-  if (q.includes('11') || q.includes('win11') || q.includes('windows 11')) {
-    return {
-      reply: 'Windows 11 マイカ・プロテーマを適用します。中央タスクバーとMicaすりガラスへ切り替えます。',
-      action: { type: 'apply_theme', target: 'win11-mica', label: 'Win11テーマを適用' },
-      model: 'local-copilot',
-    };
-  }
-  if (q.includes('dex') || q.includes('サムスン') || q.includes('samsung')) {
-    return {
-      reply: 'Samsung DeX デスクトップシェルに切り替えます。マルチウィンドウとアプリドロワーが有効になります。',
-      action: { type: 'set_shell', target: 'dex', label: 'DeXシェルに切替' },
-      model: 'local-copilot',
-    };
-  }
-  if (q.includes('chrome') || q.includes('chromeos')) {
-    return {
-      reply: 'ChromeOS Material 3シェルに切り替えます。Everythingボタンとピルシェルフが起動します。',
-      action: { type: 'set_shell', target: 'chromeos', label: 'ChromeOSに切替' },
-      model: 'local-copilot',
-    };
-  }
-  if (q.includes('mac') || q.includes('apple') || q.includes('マック')) {
-    return {
-      reply: 'macOS Liquid Aquaシェルに切り替えます。ボトムの拡大Dockと上部システムメニューバーへ移行します。',
+      reply: 'macOSレイアウトに切り替えました。上部のメニューバーと下部のDockが利用できます。',
       action: { type: 'set_shell', target: 'mac', label: 'macOSに切替' },
-      model: 'local-copilot',
+      model: 'assistant',
     };
   }
-  if (q.includes('cyber') || q.includes('サイバー') || q.includes('ネオン') || q.includes('ブラックホール')) {
+  if (q.includes('windows 11') || q.includes('win11')) {
     return {
-      reply: 'サイバーパンク・シンギュラリティテーマを適用します。3D Einstein Ring Raymarcherブラックホールと高輝度ネオンHUDが起動します。',
-      action: { type: 'apply_theme', target: 'cyberpunk-singularity', label: 'サイバーパンク適用' },
-      model: 'local-copilot',
+      reply: 'Windows 11レイアウトに切り替えました。',
+      action: { type: 'set_shell', target: 'windows11', label: 'Windows 11に切替' },
+      model: 'assistant',
     };
   }
-  if (q.includes('snap') || q.includes('スナップ') || q.includes('整列') || q.includes('並べる') || q.includes('タイリング')) {
+  if (q.includes('windows 10') || q.includes('win10')) {
     return {
-      reply: '開いているウィンドウを左右50:50にスナップ整列します。',
+      reply: 'Windows 10レイアウトに切り替えました。',
+      action: { type: 'set_shell', target: 'windows10', label: 'Windows 10に切替' },
+      model: 'assistant',
+    };
+  }
+  if (q.includes('vista') || q.includes('ビスタ') || q.includes('aero')) {
+    return {
+      reply: 'Aero Glassレイアウトに切り替えました。',
+      action: { type: 'set_shell', target: 'vista', label: 'Aero Glassに切替' },
+      model: 'assistant',
+    };
+  }
+  if (q.includes('xp')) {
+    return {
+      reply: 'クラシックXPレイアウトに切り替えました。',
+      action: { type: 'set_shell', target: 'xp', label: 'XPに切替' },
+      model: 'assistant',
+    };
+  }
+  if (q.includes('zorin') || q.includes('ubuntu') || q.includes('linux')) {
+    return {
+      reply: 'Linuxデスクトップレイアウトに切り替えました。',
+      action: { type: 'set_shell', target: 'ubuntu', label: 'Ubuntuに切替' },
+      model: 'assistant',
+    };
+  }
+  if (q.includes('整列') || q.includes('スナップ') || q.includes('並べる')) {
+    return {
+      reply: '開いているウィンドウを左右50:50に整列しました。',
       action: { type: 'snap_windows', target: '50-50', label: 'ウィンドウを整列' },
-      model: 'local-copilot',
-    };
-  }
-  if (q.includes('dark') || q.includes('ダーク')) {
-    return {
-      reply: 'ダークモードに切り替えます。',
-      action: { type: 'set_theme', target: 'dark', label: 'ダークモード' },
-      model: 'local-copilot',
-    };
-  }
-  if (q.includes('light') || q.includes('ライト')) {
-    return {
-      reply: 'ライトモードに切り替えます。',
-      action: { type: 'set_theme', target: 'light', label: 'ライトモード' },
-      model: 'local-copilot',
+      model: 'assistant',
     };
   }
 
-  // General conversational assistance
+  // 6. Math calculation
+  const mathResult = evaluateSafeMath(raw);
+  if (mathResult !== null) {
+    return {
+      reply: `計算結果: **${mathResult}**`,
+      action: null,
+      model: 'assistant',
+    };
+  }
+
+  // 7. Programming / Coding questions
+  if (q.includes('typescript') || q.includes('javascript') || q.includes('配列') || q.includes('重複')) {
+    return {
+      reply:
+        'TypeScript / JavaScriptで配列の重複を除去する最も簡潔な方法は `Set` を使う方法です：\n\n```ts\nconst numbers = [1, 2, 2, 3, 4, 4, 5];\nconst unique = [...new Set(numbers)];\n// 結果: [1, 2, 3, 4, 5]\n```\n\nオブジェクトの配列で特定のキー（例: `id`）で重複を除去する場合は以下のように書けます：\n\n```ts\nconst uniqueById = Array.from(\n  new Map(items.map(item => [item.id, item])).values()\n);\n```',
+      action: null,
+      model: 'assistant',
+    };
+  }
+
+  if (q.includes('python') || q.includes('パイソン')) {
+    return {
+      reply:
+        'Pythonの基本的なリスト内包表記と関数定義のサンプルです：\n\n```python\ndef filter_even(nums: list[int]) -> list[int]:\n    return [n for n in nums if n % 2 == 0]\n\nprint(filter_even([1, 2, 3, 4, 5, 6]))  # [2, 4, 6]\n```\nほかに作成したい処理があれば教えてください。',
+      action: null,
+      model: 'assistant',
+    };
+  }
+
+  if (q.includes('html') || q.includes('css') || q.includes('ガラス') || q.includes('glass')) {
+    return {
+      reply:
+        '3Dガラス（Liquid Glass）風のCSSスタイル例です：\n\n```css\n.glass-card {\n  background: rgba(255, 255, 255, 0.08);\n  backdrop-filter: blur(20px) saturate(190%);\n  border-radius: 20px;\n  box-shadow:\n    0 20px 50px rgba(0, 0, 0, 0.45),\n    inset 0 1.5px 2px rgba(255, 255, 255, 0.4),\n    inset 0 -2px 4px rgba(0, 0, 0, 0.3);\n}\n```',
+      action: null,
+      model: 'assistant',
+    };
+  }
+
+  // 8. Time / Date questions
+  if (q.includes('何時') || q.includes('今日') || q.includes('日付') || q.includes('日時')) {
+    const now = new Date();
+    return {
+      reply: `現在は **${now.toLocaleDateString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'long',
+      })} ${now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })}** です。`,
+      action: null,
+      model: 'assistant',
+    };
+  }
+
+  // 9. Conversational & helpful general response
   return {
-    reply: `LiquidOS Copilotです！何かお手伝いできることはありますか？\n「XPテーマにして」「Vista Aeroを適用」「ブラウザを開いて」「DeXモードに切替」「ウィンドウを整列」などのOS操作や、プログラミング・質問・アイデア出しなど何でもお気軽にどうぞ！`,
+    reply: `「${raw}」についてですね。\n\n以下の操作やサポートが可能です：\n- **OSの操作**: 「オーロラをエメラルドにして」「ガラスの湾曲を強くして」「macOSモードにして」「スリープにして」\n- **アプリの起動**: 「ゲームを起動」「設定を開いて」「ブラウザを開いて」\n- **計算・コード作成**: 数式の入力（例: \`128 * 45\`）や、TypeScript / Python / CSS のコード作成`,
     action: null,
-    model: 'local-copilot',
+    model: 'assistant',
   };
 }
 
@@ -154,17 +292,14 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Health and capabilities check
   app.get('/api/health', (_req, res) => {
     res.json({
       status: 'ok',
-      os: 'LiquidOS-4.1.0-Beta',
       geminiAvailable: Boolean(process.env.GEMINI_API_KEY),
-      model: 'gemini-3.8-flash',
     });
   });
 
-  // Web Reverse Proxy Endpoint for Liquid Browser & jsDelivr / GitHub Pages (bypasses X-Frame-Options / CSP / nosniff)
+  // Web Reverse Proxy Endpoint for Browser & jsDelivr / GitHub Pages
   app.get('/api/proxy', async (req, res) => {
     const rawUrl = req.query.url as string;
     if (!rawUrl) {
@@ -173,7 +308,6 @@ async function startServer() {
 
     let targetUrl = rawUrl.trim();
 
-    // Support jsdelivr:owner/repo or gh:owner/repo shortcuts
     if (/^(jsdelivr|gh):/i.test(targetUrl)) {
       const repoPath = targetUrl.replace(/^(jsdelivr|gh):\/+/i, '').replace(/^(jsdelivr|gh):/i, '');
       const parts = repoPath.split('/');
@@ -198,7 +332,7 @@ async function startServer() {
               'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
             Accept:
               'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9,ja;q=0.8',
+            'Accept-Language': 'ja,en-US;q=0.9,en;q=0.8',
           },
         });
         clearTimeout(timeout);
@@ -212,7 +346,6 @@ async function startServer() {
     try {
       let response = await fetchWithFallback(targetUrl);
 
-      // Automatic GitHub Pages -> jsDelivr CDN fallback when GitHub Pages 404s
       if (!response.ok && response.status === 404) {
         const ghPagesMatch = targetUrl.match(/^https?:\/\/([^.]+)\.github\.io\/([^/]+)(\/.*)?$/i);
         if (ghPagesMatch) {
@@ -231,7 +364,6 @@ async function startServer() {
       const parsed = new URL(targetUrl);
       let contentType = response.headers.get('content-type') || 'text/html; charset=utf-8';
 
-      // jsDelivr & raw.githubusercontent often serve .html with text/plain or nosniff; force text/html for .html or root paths
       const isJsDelivrOrRaw =
         parsed.hostname.includes('jsdelivr.net') || parsed.hostname.includes('githubusercontent.com');
       if (
@@ -241,7 +373,6 @@ async function startServer() {
         contentType = 'text/html; charset=utf-8';
       }
 
-      // Set headers allowing iframe embedding
       res.setHeader('Content-Type', contentType);
       res.removeHeader('X-Frame-Options');
       res.removeHeader('Content-Security-Policy');
@@ -252,7 +383,6 @@ async function startServer() {
         let html = await response.text();
         const baseHref = `${parsed.protocol}//${parsed.host}${parsed.pathname.substring(0, parsed.pathname.lastIndexOf('/') + 1) || '/'}`;
 
-        // Inject <base> tag and script to rewrite link clicks through /api/proxy
         const scriptInjection = `
           <base href="${baseHref}">
           <script>
@@ -276,7 +406,6 @@ async function startServer() {
 
         return res.send(html);
       } else {
-        // Stream images, css, scripts directly
         const buffer = await response.arrayBuffer();
         return res.send(Buffer.from(buffer));
       }
@@ -285,21 +414,12 @@ async function startServer() {
       return res.status(502).send(`
         <!DOCTYPE html>
         <html>
-          <head>
-            <meta charset="utf-8">
-            <style>
-              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #09090b; color: #f4f4f5; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
-              .card { max-width: 480px; padding: 2rem; background: rgba(255,255,255,0.04); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.08); text-align: center; }
-              h1 { font-size: 1.1rem; margin-bottom: 0.5rem; color: #f43f5e; }
-              p { font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-bottom: 1.5rem; }
-              button { background: #0ea5e9; color: #000; font-weight: 600; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; }
-            </style>
-          </head>
-          <body>
-            <div class="card">
-              <h1>Connection Timeout or Blocked</h1>
-              <p>The proxy could not load: <code>${rawUrl}</code>. Check the URL or connection.</p>
-              <button onclick="window.location.reload()">Retry</button>
+          <head><meta charset="utf-8"></head>
+          <body style="font-family:sans-serif;background:#09090b;color:#f4f4f5;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;">
+            <div style="max-width:420px;padding:2rem;background:rgba(255,255,255,0.04);border-radius:1rem;text-align:center;">
+              <h1 style="font-size:1rem;color:#38bdf8;">ページの読み込みに失敗しました</h1>
+              <p style="font-size:0.8rem;color:rgba(255,255,255,0.6);">${rawUrl}</p>
+              <button onclick="window.location.reload()" style="background:#38bdf8;color:#000;font-weight:600;border:none;padding:0.5rem 1.2rem;border-radius:0.5rem;cursor:pointer;">再試行</button>
             </div>
           </body>
         </html>
@@ -307,7 +427,7 @@ async function startServer() {
     }
   });
 
-  // AI Chat Endpoint with Gemini 3.8 Flash
+  // AI Chat Endpoint using @google/genai
   app.post('/api/ai/chat', async (req, res) => {
     try {
       const { message, history, context } = req.body;
@@ -315,13 +435,9 @@ async function startServer() {
         return res.status(400).json({ error: 'Message is required' });
       }
 
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
       if (!apiKey) {
-        const fallback = getFallbackResponse(message);
-        return res.json({
-          ...fallback,
-          note: 'Operating via built-in intelligent engine (GEMINI_API_KEY optional).',
-        });
+        return res.json(getIntelligentLocalResponse(message));
       }
 
       const ai = new GoogleGenAI({
@@ -329,56 +445,28 @@ async function startServer() {
         httpOptions: { headers: { 'User-Agent': 'aistudio-build' } },
       });
 
-      const systemInstruction = `You are LiquidOS Copilot, the AI assistant inside LiquidOS (a web-based desktop OS).
-Respond naturally in the user's language (Japanese if asked in Japanese, English if in English).
-Be concise, helpful, friendly, and precise.
+      const systemInstruction = `You are the AI assistant built into a 3D Liquid Glass Desktop OS.
+Answer any general knowledge, programming, math, writing, or OS control request naturally and accurately in the user's language (default to clear, natural Japanese).
 
-Available Apps in LiquidOS:
-- 'browser': Liquid Browser with Scramjet/Ultraviolet proxy engine
-- 'synth': Monochrome Music & synced lyrics
-- 'explorer': File Explorer & virtual storage
-- 'terminal': Liquid CLI Terminal
-- 'settings': System Settings & shell picker
-- 'notepad': Notepad Text Editor
-- 'game': Cosmic Velocity 3D arcade racer
-- 'appstore': App Store & Theme Store
-- 'calculator': Calculator Pro
-- 'taskmanager': Task Manager & process monitor
-- 'sysmon': System Monitor & clock telemetry
-- 'calendar': Cosmic Calendar & Tasks
-
-Available Shells:
-- 'xp' (Windows XP Luna Blue)
-- 'vista' (Windows Vista Aero Glass with live Sidebar gadgets)
-- 'windows10' (Windows 10 Fluent Dark)
-- 'windows' or 'windows11' (Windows 11 Mica Fluent)
-- 'windows8' (Windows 8 Metro Live Tiles)
-- 'dex' (Samsung DeX Desktop)
-- 'chromeos' (ChromeOS Material 3)
-- 'mac' (macOS Liquid Aqua)
-- 'ubuntu' (Ubuntu Linux Yaru)
-
-Available Store Themes:
-- 'xp-luna', 'vista-aero', 'win10-fluent', 'win11-mica', 'win8-metro', 'samsung-dex', 'chromeos-m3', 'macos-sonoma', 'cyberpunk-singularity', 'sakura-vaporwave', 'ubuntu-lunar', 'gargantua-oled'
-
-Always reply with strict JSON matching this schema:
-{
-  "reply": "Your conversational answer in user's language",
-  "action": {
-    "type": "open_app" | "set_shell" | "set_theme" | "apply_theme" | "snap_windows" | "play_music" | "none",
-    "target": "target string if applicable (e.g., 'browser', 'vista', 'xp-luna')",
-    "label": "Short button label for manual trigger"
-  }
-}
-If no OS command is requested, set action to null or type "none". Return ONLY raw JSON without markdown backticks.`;
+Available OS Actions (only trigger when the user asks to open an app, change settings/theme/aurora/glass, or sleep):
+- type: "open_app", target: "browser" | "synth" | "explorer" | "terminal" | "settings" | "notepad" | "game" | "appstore" | "calculator" | "taskmanager" | "sysmon" | "calendar" | "weather" | "clock"
+- type: "set_shell", target: "windows11" | "windows10" | "vista" | "xp" | "mac" | "dex" | "chromeos" | "ubuntu" | "metro"
+- type: "set_aurora", target: "cyan-violet" | "emerald-sky" | "rose-gold" | "ocean-blue" | "sunset-magenta"
+- type: "set_glass", target: "0" to "100" (curvature percentage)
+- type: "lock_system" (put screen to sleep/lock)
+- type: "snap_windows"
+- type: "none" (when answering general questions, coding, math, or conversation)`;
 
       const contents: Array<{ role: string; parts: Array<{ text: string }> }> = [];
       if (Array.isArray(history)) {
-        for (const item of history.slice(-6) as ChatMessage[]) {
-          contents.push({
-            role: item.role === 'model' || item.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: item.content || item.text || '' }],
-          });
+        for (const item of history.slice(-8) as ChatMessage[]) {
+          const text = item.content || item.text || '';
+          if (text) {
+            contents.push({
+              role: item.role === 'model' || item.role === 'assistant' ? 'model' : 'user',
+              parts: [{ text }],
+            });
+          }
         }
       }
 
@@ -386,47 +474,70 @@ If no OS command is requested, set action to null or type "none". Return ONLY ra
         role: 'user',
         parts: [
           {
-            text: `Current Desktop State: ${JSON.stringify(context || {})}\n\nUser Message: ${message}`,
+            text: context ? `[Desktop Context: ${JSON.stringify(context)}]\n${message}` : message,
           },
         ],
       });
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents,
-        config: {
-          systemInstruction,
-          responseMimeType: 'application/json',
-        },
-      });
+      const modelsToTry = ['gemini-3.8-flash', 'gemini-flash-latest'];
+      let rawText = '';
 
-      const rawText = response.text || '';
+      for (const modelName of modelsToTry) {
+        try {
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents,
+            config: {
+              systemInstruction,
+              responseMimeType: 'application/json',
+              responseSchema: {
+                type: Type.OBJECT,
+                properties: {
+                  reply: { type: Type.STRING },
+                  action: {
+                    type: Type.OBJECT,
+                    properties: {
+                      type: { type: Type.STRING },
+                      target: { type: Type.STRING },
+                      label: { type: Type.STRING },
+                    },
+                  },
+                },
+                required: ['reply'],
+              },
+            },
+          });
+          if (response.text) {
+            rawText = response.text;
+            break;
+          }
+        } catch (innerErr) {
+          console.warn(`Model ${modelName} attempt failed:`, innerErr);
+        }
+      }
+
+      if (!rawText) {
+        return res.json(getIntelligentLocalResponse(message));
+      }
+
       try {
         const parsed = JSON.parse(rawText);
         return res.json({
           reply: parsed.reply || rawText,
-          action: parsed.action || null,
-          model: 'gemini-3.8-flash',
+          action: parsed.action && parsed.action.type !== 'none' ? parsed.action : null,
         });
       } catch {
         return res.json({
           reply: rawText,
           action: null,
-          model: 'gemini-3.8-flash',
         });
       }
     } catch (err: unknown) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      console.warn('Gemini API call failed, using fallback:', errMsg);
-      const fallback = getFallbackResponse(req.body?.message);
-      return res.json({
-        ...fallback,
-        warning: 'Fallback activated',
-      });
+      console.warn('AI route fallback:', err);
+      return res.json(getIntelligentLocalResponse(req.body?.message || ''));
     }
   });
 
-  // Support legacy subpaths like /LiquidOS-V3.0.0-Beta/ or /LiquidOS-4.1.0-Beta/
   app.use((req, _res, next) => {
     if (req.url.startsWith('/LiquidOS-')) {
       const rewritten = req.url.replace(/^\/LiquidOS-[^/]+/, '') || '/';
@@ -435,7 +546,6 @@ If no OS command is requested, set action to null or type "none". Return ONLY ra
     next();
   });
 
-  // Vite middlewares in development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -447,7 +557,7 @@ If no OS command is requested, set action to null or type "none". Return ONLY ra
   }
 
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`LiquidOS Server running at http://0.0.0.0:${PORT}`);
+    console.log(`Server running at http://0.0.0.0:${PORT}`);
   });
 }
 

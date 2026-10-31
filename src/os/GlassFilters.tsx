@@ -1,15 +1,23 @@
 import { useEffect, useRef } from 'react';
+import { useOS } from './OSContext';
 
 export function GlassFilters() {
+  const { glassCurvature, glassWobble } = useOS();
   const dispRef = useRef<SVGFEDisplacementMapElement>(null);
   const scaleRef = useRef(1.0);
   const targetScaleRef = useRef(1.0);
+
+  const distortionScale = Math.round((glassCurvature / 100) * 68);
+  const dockScale = Math.max(8, Math.round((glassCurvature / 100) * 44));
+  const menuScale = Math.max(10, Math.round((glassCurvature / 100) * 56));
+  const baseLensScale = Math.max(0.2, (glassCurvature / 40) * 1.15);
 
   useEffect(() => {
     let raf = 0;
     let lastX = 0;
     let lastY = 0;
     let lastTime = performance.now();
+    const wobbleFactor = (glassWobble / 100) * 1.6;
 
     const handlePointerMove = (e: PointerEvent) => {
       const now = performance.now();
@@ -18,8 +26,7 @@ export function GlassFilters() {
       const dy = e.clientY - lastY;
       const speed = Math.sqrt(dx * dx + dy * dy) / dt;
 
-      // When moving/dragging fast, expand refraction scale slightly, then settle
-      const dynamicScale = 1.0 + Math.min(speed * 0.45, 0.85);
+      const dynamicScale = baseLensScale + Math.min(speed * 0.55 * wobbleFactor, 1.4 * wobbleFactor);
       targetScaleRef.current = dynamicScale;
 
       lastX = e.clientX;
@@ -30,9 +37,8 @@ export function GlassFilters() {
     window.addEventListener('pointermove', handlePointerMove, { passive: true });
 
     const updateFilter = () => {
-      // Smooth lerp back to 1.0
-      scaleRef.current += (targetScaleRef.current - scaleRef.current) * 0.08;
-      targetScaleRef.current += (1.0 - targetScaleRef.current) * 0.04;
+      scaleRef.current += (targetScaleRef.current - scaleRef.current) * 0.1;
+      targetScaleRef.current += (baseLensScale - targetScaleRef.current) * 0.05;
 
       if (dispRef.current) {
         dispRef.current.setAttribute('scale', scaleRef.current.toFixed(2));
@@ -46,16 +52,15 @@ export function GlassFilters() {
       cancelAnimationFrame(raf);
       window.removeEventListener('pointermove', handlePointerMove);
     };
-  }, []);
+  }, [baseLensScale, glassWobble]);
 
   return (
     <svg width="0" height="0" style={{ position: 'absolute', pointerEvents: 'none' }} aria-hidden="true">
       <defs>
-        {/* V4.0.0 Global Refraction Token */}
         <filter id="glass-distortion" x="0%" y="0%" width="100%" height="100%">
           <feTurbulence type="fractalNoise" baseFrequency="0.009 0.009" numOctaves={2} seed={92} result="noise" />
           <feGaussianBlur in="noise" stdDeviation="2" result="blurred" />
-          <feDisplacementMap in="SourceGraphic" in2="blurred" scale={27} xChannelSelector="R" yChannelSelector="G" />
+          <feDisplacementMap in="SourceGraphic" in2="blurred" scale={distortionScale} xChannelSelector="R" yChannelSelector="G" />
         </filter>
 
         {/* Mikhail-Bespalov Liquid Glass Lens — exact SVG displacement refraction map */}
@@ -74,7 +79,7 @@ export function GlassFilters() {
             id="disp"
             in="blur"
             in2="map"
-            scale="1"
+            scale={baseLensScale}
             xChannelSelector="R"
             yChannelSelector="G"
           />
@@ -84,21 +89,21 @@ export function GlassFilters() {
         <filter id="frosted-dock" x="0%" y="0%" width="100%" height="100%">
           <feTurbulence type="fractalNoise" baseFrequency="0.008 0.012" numOctaves="2" seed="17" result="noise" />
           <feGaussianBlur in="noise" stdDeviation="2.5" result="blurred" />
-          <feDisplacementMap in="SourceGraphic" in2="blurred" scale="26" xChannelSelector="R" yChannelSelector="G" />
+          <feDisplacementMap in="SourceGraphic" in2="blurred" scale={dockScale} xChannelSelector="R" yChannelSelector="G" />
         </filter>
 
         {/* Start Menu & Dialog Liquid Filter */}
         <filter id="frosted-menu" x="0%" y="0%" width="100%" height="100%">
           <feTurbulence type="fractalNoise" baseFrequency="0.006 0.009" numOctaves="2" seed="42" result="noise" />
           <feGaussianBlur in="noise" stdDeviation="2" result="blurred" />
-          <feDisplacementMap in="SourceGraphic" in2="blurred" scale="32" xChannelSelector="R" yChannelSelector="G" />
+          <feDisplacementMap in="SourceGraphic" in2="blurred" scale={menuScale} xChannelSelector="R" yChannelSelector="G" />
         </filter>
 
         {/* Legacy compatibility alias */}
         <filter id="frosted" x="0%" y="0%" width="100%" height="100%">
           <feTurbulence type="fractalNoise" baseFrequency="0.008 0.008" numOctaves="2" seed="92" result="noise" />
           <feGaussianBlur in="noise" stdDeviation="2" result="blurred" />
-          <feDisplacementMap in="SourceGraphic" in2="blurred" scale="40" xChannelSelector="R" yChannelSelector="G" />
+          <feDisplacementMap in="SourceGraphic" in2="blurred" scale={distortionScale} xChannelSelector="R" yChannelSelector="G" />
         </filter>
       </defs>
     </svg>

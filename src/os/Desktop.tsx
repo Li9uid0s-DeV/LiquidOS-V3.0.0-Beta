@@ -41,7 +41,7 @@ function renderApp(appId: string, payload?: unknown) {
     case 'settings':
       return <SettingsApp />;
     case 'game':
-      return <GameApp />;
+      return <GameApp payload={payload as { gameId?: string }} />;
     case 'appstore':
       return <AppStoreApp />;
     case 'calculator':
