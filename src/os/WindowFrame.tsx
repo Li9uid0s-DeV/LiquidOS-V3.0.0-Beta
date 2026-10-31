@@ -68,7 +68,7 @@ function getSnapPresets(vw: number, vh: number): SnapPreset[] {
 
 export function WindowFrame({ win, children }: Props) {
   const {
-    focusWindow, closeWindow, minimizeWindow, toggleMaximize, updateWindowRect, shellMode,
+    focusWindow, closeWindow, minimizeWindow, toggleMaximize, updateWindowRect, shellMode, touchMode, windows,
   } = useOS();
   const [dragging, setDragging] = useState(false);
   const [snapZone, setSnapZone] = useState<SnapZone | null>(null);
@@ -240,15 +240,21 @@ export function WindowFrame({ win, children }: Props) {
   const isChromeOS = shellMode === 'chromeos';
   const isMac = shellMode === 'mac';
   const isUbuntu = shellMode === 'ubuntu';
+  const isZorin = shellMode === 'zorin';
 
-  // Responsive touch sizing on small screen viewports
-  const isMobileViewport = typeof window !== 'undefined' && window.innerWidth < 640;
-  
+  // Windows freely overlap and drag; only maximize when explicitly maximized or in Windows 8 Metro mode
   const style: React.CSSProperties = isMetro
     ? { left: 0, top: 0, width: '100vw', height: '100vh', zIndex: win.zIndex, borderRadius: 0 }
-    : isMax || isMobileViewport
+    : win.maximized
     ? { left: 0, top: 0, width: '100vw', height: `calc(100vh - ${TASKBAR_H}px)`, zIndex: win.zIndex, transform: undefined }
-    : { left: win.x, top: win.y, width: win.width, height: win.height, zIndex: win.zIndex, transform: undefined };
+    : {
+        left: win.x,
+        top: win.y,
+        width: typeof window !== 'undefined' ? Math.min(win.width, window.innerWidth - 16) : win.width,
+        height: typeof window !== 'undefined' ? Math.min(win.height, window.innerHeight - TASKBAR_H - 16) : win.height,
+        zIndex: win.zIndex,
+        transform: undefined,
+      };
 
   const presets = getSnapPresets(typeof window !== 'undefined' ? window.innerWidth : 1200, typeof window !== 'undefined' ? window.innerHeight : 800);
 
@@ -271,6 +277,15 @@ export function WindowFrame({ win, children }: Props) {
   } else if (isChromeOS) {
     windowFrameClasses = 'bg-zinc-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10';
     titleBarClasses = 'h-9 px-3 bg-white/5 border-b border-white/10 text-white/90';
+  } else if (isZorin) {
+    windowFrameClasses = 'bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-sky-500/30 ring-1 ring-white/10';
+    titleBarClasses = 'h-10 px-3.5 bg-black/40 border-b border-white/10 text-white';
+  }
+
+  const isTopmost = windows.filter((w) => !w.minimized).reduce((max, w) => (w.zIndex > max ? w.zIndex : max), 0) === win.zIndex;
+
+  if (touchMode) {
+    titleBarClasses = titleBarClasses.replace(/h-\d+/, 'h-12') + ' touch-manipulation py-1';
   }
 
   return (
@@ -290,6 +305,8 @@ export function WindowFrame({ win, children }: Props) {
         exit={{ opacity: 0, scale: isMetro ? 1 : 0.96 }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         onPointerDown={() => focusWindow(win.id)}
+        onMouseDown={() => focusWindow(win.id)}
+        onTouchStart={() => focusWindow(win.id)}
       >
         {/* ========================================================
             1. METRO / FULLSCREEN IMMERSIVE HEADER BAR
@@ -567,6 +584,17 @@ export function WindowFrame({ win, children }: Props) {
           style={{ contain: 'layout style paint' }}
         >
           {children}
+
+          {/* Inactive Window Overlay: brings window to front instantly on click or tap */}
+          {!isTopmost && (
+            <div
+              className="absolute inset-0 z-30 bg-transparent cursor-pointer"
+              onPointerDown={(e) => {
+                e.stopPropagation();
+                focusWindow(win.id);
+              }}
+            />
+          )}
         </div>
 
         {/* ========================================================

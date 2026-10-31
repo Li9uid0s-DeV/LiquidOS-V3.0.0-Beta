@@ -82,6 +82,7 @@ export function Taskbar({ onLock }: TaskbarProps) {
   const isWin10 = shellMode === 'windows10';
   const isDeX = shellMode === 'dex';
   const isChromeOS = shellMode === 'chromeos';
+  const isZorin = shellMode === 'zorin';
 
   return (
     <>
@@ -491,9 +492,70 @@ export function Taskbar({ onLock }: TaskbarProps) {
       )}
 
       {/* ==============================================================
-          6. WINDOWS 11 / STANDARD MODERN FLUENT TASKBAR
+          6. ZORIN OS 17 PRO FLOATING PILL TASKBAR
          ============================================================== */}
-      {!isXP && !isVista && !isWin10 && !isDeX && !isChromeOS && (
+      {isZorin && (
+        <div
+          className="fixed bottom-2 inset-x-3 h-12 z-30 flex items-center justify-between px-3 select-none font-sans bg-slate-900/90 backdrop-blur-2xl rounded-2xl border border-sky-500/30 shadow-2xl text-white"
+        >
+          {/* Zorin Start Button */}
+          <div className="flex items-center gap-2">
+            <button
+              ref={startBtnRef}
+              onClick={handleStartClick}
+              className={`h-9 px-3 rounded-xl flex items-center gap-2 transition ${
+                startOpen ? 'bg-sky-500 text-black shadow-lg shadow-sky-500/30' : 'bg-white/10 hover:bg-white/20 text-white'
+              }`}
+              title="Zorin Menu"
+            >
+              <Icon name="Navigation" size={15} className={startOpen ? 'text-black' : 'text-sky-400'} />
+              <span className="text-xs font-bold tracking-tight">Zorin</span>
+            </button>
+          </div>
+
+          {/* Running & Pinned Apps Group */}
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-white/5 rounded-xl border border-white/5">
+            {TASKBAR_APPS.map((app) => {
+              const wins = windows.filter((w) => w.appId === app.appId);
+              const active = wins.length > 0;
+              const anyVisible = wins.some((w) => !w.minimized);
+              return (
+                <button
+                  key={app.appId}
+                  onClick={() => handleAppClick(app.appId)}
+                  className={`relative h-8 w-8 rounded-lg flex items-center justify-center transition ${
+                    anyVisible ? 'bg-white/20 border-b-2 border-sky-400' : 'hover:bg-white/10'
+                  }`}
+                  title={app.label}
+                >
+                  <Icon name={app.icon} size={16} className="text-white" />
+                  {active && !anyVisible && (
+                    <span className="absolute -bottom-0.5 w-1 h-1 rounded-full bg-sky-400" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Right Zorin Status Island */}
+          <div className="flex items-center gap-2">
+            <AIAssistant onLock={onLock} />
+            <button
+              onClick={() => setTrayOpen(!trayOpen)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/10 text-xs font-mono"
+            >
+              <Icon name="Wifi" size={13} className="text-sky-400" />
+              <Icon name="Volume2" size={13} className="text-sky-400" />
+              <span className="font-semibold text-white">{timeStr}</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ==============================================================
+          7. WINDOWS 11 / STANDARD MODERN FLUENT TASKBAR
+         ============================================================== */}
+      {!isXP && !isVista && !isWin10 && !isDeX && !isChromeOS && !isZorin && (
         <div
           className="fixed bottom-0 inset-x-0 h-10 w-screen z-30 liquid-glass-taskbar flex items-center justify-between px-3 select-none"
           style={{ position: 'fixed', bottom: 0, left: 0, right: 0, width: '100vw', borderRadius: 0 }}
@@ -605,7 +667,7 @@ export function Taskbar({ onLock }: TaskbarProps) {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 20, scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              className="glass fixed bottom-14 right-3 z-50 w-72 rounded-2xl p-4 shadow-2xl border border-white/20"
+              className="glass fixed bottom-14 right-3 z-50 w-72 max-w-[calc(100vw-24px)] rounded-2xl p-4 shadow-2xl border border-white/20"
             >
               <div className="grid grid-cols-3 gap-2 mb-4">
                 {[

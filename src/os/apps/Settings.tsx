@@ -5,11 +5,12 @@ import {
   ShellMode,
   DesignEngine,
   NebulaPreset,
+  LockScreenStyle,
 } from '../types';
 import { WALLPAPERS } from '../wallpapers';
 import { Icon } from '../Icon';
 
-type Section = 'personalization' | 'shells' | 'nebula' | 'account' | 'about';
+type Section = 'personalization' | 'shells' | 'lockscreen' | 'touch' | 'nebula' | 'account' | 'about';
 
 const PRESET_WALLPAPERS: Wallpaper[] = ['space', 'aurora', 'sunset', 'ocean', 'forest', 'cosmic', 'bloom', 'shader'];
 
@@ -40,6 +41,11 @@ export function SettingsApp() {
     setSelectedCustomId,
     user,
     setUser,
+    lockScreenStyle,
+    setLockScreenStyle,
+    touchMode,
+    setTouchMode,
+    lockSystem,
   } = useOS();
 
   const [section, setSection] = useState<Section>('personalization');
@@ -55,6 +61,8 @@ export function SettingsApp() {
   const sections: { id: Section; label: string; icon: string }[] = [
     { id: 'personalization', label: 'Liquid Personalization', icon: 'Palette' },
     { id: 'shells', label: 'Cross-Platform Shells', icon: 'Layout' },
+    { id: 'lockscreen', label: 'Lock Screen & Sleep', icon: 'Lock' },
+    { id: 'touch', label: 'Touch & Tablet Mode', icon: 'Hand' },
     { id: 'nebula', label: 'Gargantua Nebula Physics', icon: 'Sparkles' },
     { id: 'account', label: 'User Security & Profile', icon: 'Shield' },
     { id: 'about', label: 'System Architecture', icon: 'Info' },
@@ -237,6 +245,62 @@ export function SettingsApp() {
                   className="w-full accent-orange-500 bg-white/10 rounded-lg h-1.5"
                 />
               </div>
+
+              {/* Touch Operation Mode Toggle */}
+              <div className="pt-2 border-t border-white/10 flex items-center justify-between">
+                <div>
+                  <div className="text-xs text-white font-semibold flex items-center gap-2">
+                    <Icon name="Hand" size={14} className="text-orange-400" />
+                    Touch & Tablet Optimization Mode
+                  </div>
+                  <div className="text-[11px] text-white/50">Enlarges hit targets (44px+) and optimizes touch swiping across all apps.</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTouchMode(!touchMode)}
+                  className={`w-12 h-6 rounded-full transition-colors relative flex items-center px-1 ${
+                    touchMode ? 'bg-orange-500' : 'bg-white/20'
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-white transition-transform ${touchMode ? 'translate-x-6' : 'translate-x-0'}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Lock Screen & Sleep Customizer (HyperOS 3 / MIUIx / Windows Hello) */}
+            <div className="glass-panel p-4 rounded-xl space-y-3 border border-orange-500/20">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-orange-400">Lock Screen & Sleep Style</h3>
+                  <p className="text-[11px] text-white/50">Customize clock typography, depth physics, and unlock gestures.</p>
+                </div>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-orange-500/20 text-orange-300">
+                  {lockScreenStyle}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { id: 'hyperos3', label: 'HyperOS 3 Flagship', desc: 'Bold depth clock, dynamic music player, swipe up gesture, quick torch.' },
+                  { id: 'miuix', label: 'MIUIx Classic', desc: 'Stacked vertical bold numerals, squircle indicators, Xiaomi glass.' },
+                  { id: 'windows-hello', label: 'Windows Hello', desc: 'Modern acrylic card with facial biometrics glyph.' },
+                  { id: 'cosmic-liquid', label: 'Cosmic Starfield', desc: 'Deep liquid glow with starfield particles canvas.' },
+                ].map((ls) => (
+                  <button
+                    key={ls.id}
+                    type="button"
+                    onClick={() => setLockScreenStyle(ls.id as never)}
+                    className={`p-3 rounded-xl text-left border transition ${
+                      lockScreenStyle === ls.id
+                        ? 'border-orange-400 bg-orange-500/20 text-white shadow-md'
+                        : 'border-white/10 hover:bg-white/5 text-white/70'
+                    }`}
+                  >
+                    <div className="text-xs font-bold mb-1">{ls.label}</div>
+                    <div className="text-[10px] text-white/50 leading-relaxed">{ls.desc}</div>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Preset Background Wallpapers */}
@@ -371,6 +435,12 @@ export function SettingsApp() {
                   icon: 'SlidersHorizontal',
                 },
                 {
+                  id: 'zorin',
+                  name: 'Zorin OS 17 Pro',
+                  desc: 'Clean Linux desktop with floating pill dock, categorized quick launcher, and vibrant cyan accents.',
+                  icon: 'Navigation',
+                },
+                {
                   id: 'android',
                   name: 'Android Material You',
                   desc: 'Top status bar, Google search pill, Material You app grid, and gesture pill.',
@@ -425,6 +495,125 @@ export function SettingsApp() {
                 </div>
               </div>
             )}
+          </motion.div>
+        )}
+
+        {/* SECTION: LOCK SCREEN & HYPEROS 3 SLEEP CUSTOMIZER */}
+        {section === 'lockscreen' && (
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+            <div>
+              <h2 className="text-lg text-white font-bold">Lock Screen & Sleep Engine</h2>
+              <p className="text-xs text-white/50">Configure HyperOS 3 depth clock, MIUIx flagship layout, and sleep gestures.</p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {[
+                {
+                  id: 'hyperos3' as LockScreenStyle,
+                  name: 'HyperOS 3 Signature Depth',
+                  desc: 'Ultra-bold depth typography with date pill, dynamic lossless audio card, and tactile swipe unlock.',
+                  badge: 'Flagship Xiaomi',
+                },
+                {
+                  id: 'miuix' as LockScreenStyle,
+                  name: 'MIUIx Dual-Stacked Clock',
+                  desc: 'Iconic stacked hour & orange minute layout with classic circular battery percentage.',
+                  badge: 'MIUI Classic',
+                },
+                {
+                  id: 'windows-hello' as LockScreenStyle,
+                  name: 'Windows Hello Modern',
+                  desc: 'Clean center-aligned light font with blur acrylic background and key wake.',
+                  badge: 'Windows 11',
+                },
+                {
+                  id: 'cosmic-liquid' as LockScreenStyle,
+                  name: 'Cosmic Singularity Minimal',
+                  desc: 'Minimal glowing cyan time with orbital starfield canvas and subtle status glyphs.',
+                  badge: 'LiquidOS',
+                },
+              ].map((style) => (
+                <button
+                  key={style.id}
+                  onClick={() => setLockScreenStyle(style.id)}
+                  className={`glass-panel p-4 rounded-xl text-left flex flex-col justify-between transition border ${
+                    lockScreenStyle === style.id
+                      ? 'border-orange-400 bg-orange-500/20 text-white shadow-lg shadow-orange-500/20'
+                      : 'border-white/10 text-white/70 hover:bg-white/10'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-sm font-bold text-white">{style.name}</span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-white/10 text-orange-300">
+                        {style.badge}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-white/60 leading-relaxed">{style.desc}</p>
+                  </div>
+                  {lockScreenStyle === style.id && (
+                    <div className="mt-3 flex items-center gap-1.5 text-xs text-orange-400 font-semibold">
+                      <Icon name="Check" size={14} /> Active Style
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Test Lock Screen Button */}
+            <div className="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between">
+              <div>
+                <div className="text-xs font-bold text-white">Test Lock Screen & Sleep Mode</div>
+                <div className="text-[11px] text-white/50">Immediately lock the workstation to preview your selected lock screen.</div>
+              </div>
+              <button
+                onClick={lockSystem}
+                className="px-4 py-2 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs flex items-center gap-1.5 transition shadow-lg shadow-rose-500/30 active:scale-95"
+              >
+                <Icon name="Lock" size={14} />
+                <span>Sleep / Lock Now</span>
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {/* SECTION: TOUCH & TABLET MODE */}
+        {section === 'touch' && (
+          <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-5">
+            <div>
+              <h2 className="text-lg text-white font-bold">Touch Interaction & Tablet Optimization</h2>
+              <p className="text-xs text-white/50">Manage finger gesture targets, virtual joysticks, and Windows 8/11 tablet layouts.</p>
+            </div>
+
+            <div className="glass-panel p-4 rounded-xl space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-bold text-white">Touch-Optimized Mode</div>
+                  <div className="text-[11px] text-white/50">Enlarges titlebars, window controls, and reveals virtual touch buttons in games.</div>
+                </div>
+                <button
+                  onClick={() => setTouchMode(!touchMode)}
+                  className={`w-12 h-6 rounded-full transition p-0.5 flex items-center ${
+                    touchMode ? 'bg-cyan-500 justify-end' : 'bg-white/20 justify-start'
+                  }`}
+                >
+                  <motion.div layout className="w-5 h-5 rounded-full bg-white shadow-md" />
+                </button>
+              </div>
+
+              <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-bold text-white">Tablet Shell Paradigm</div>
+                  <div className="text-[11px] text-white/50">Switch immediately to full-screen Windows 8 Metro live tiles.</div>
+                </div>
+                <button
+                  onClick={() => setShellMode('metro')}
+                  className="px-3.5 py-1.5 rounded-xl bg-sky-500/30 text-sky-300 border border-sky-400/40 text-xs font-semibold hover:bg-sky-500/40 transition"
+                >
+                  Launch Windows 8 Metro
+                </button>
+              </div>
+            </div>
           </motion.div>
         )}
 
@@ -560,7 +749,7 @@ export function SettingsApp() {
           <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             <div>
               <h2 className="text-lg text-white font-bold">LiquidOS Workstation Architecture</h2>
-              <p className="text-xs text-white/50">Version 3.0.0 (Interstellar Gargantua Edition)</p>
+              <p className="text-xs text-white/50">LiquidOS-4.1.0-Beta (Quantum Singularity Edition)</p>
             </div>
 
             <div className="glass-panel p-5 rounded-2xl space-y-3 text-xs">
@@ -569,13 +758,13 @@ export function SettingsApp() {
                   <Icon name="Sparkles" size={22} />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white">LiquidOS v3.0.0-Beta</h3>
-                  <p className="text-white/50 text-[11px]">Volumetric Raymarched Gravitational Lensing Engine</p>
+                  <h3 className="text-sm font-bold text-white">LiquidOS-4.1.0-Beta</h3>
+                  <p className="text-white/50 text-[11px]">Volumetric Raymarched Gravitational Lensing & Autonomous AI Engine</p>
                 </div>
               </div>
               <p className="text-white/70 leading-relaxed">
-                LiquidOS v3.0.0 delivers pure Three.js GLSL raymarching of a high-mass black hole, authentic Einstein ring
-                distortions, and volumetric Keplerian accretion disk plasma churn at a smooth 60fps.
+                LiquidOS-4.1.0-Beta delivers pure Three.js GLSL raymarching of a high-mass black hole, authentic Einstein ring
+                distortions, HyperOS 3 depth clock lock screen, Zorin OS Linux shell, and full autonomous Gemini 3.8 Flash AI Studio integration.
               </p>
             </div>
           </motion.div>

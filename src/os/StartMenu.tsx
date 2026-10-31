@@ -136,16 +136,19 @@ export function StartMenu({ open, onClose, startPos }: Props) {
   const isWin10 = shellMode === 'windows10';
   const isDeX = shellMode === 'dex';
   const isChromeOS = shellMode === 'chromeos';
+  const isZorin = shellMode === 'zorin';
 
-  // Windows 11 / Modern center positioning vs left positioning for XP/Vista/Win10
-  const isLeftAligned = isXP || isVista || isWin10 || isDeX;
-  const menuWidth = isXP ? 420 : isVista ? 440 : isWin10 ? 640 : isChromeOS ? 560 : isDeX ? 500 : 540;
+  // Responsive boundary calculation to prevent off-screen popups
+  const isLeftAligned = isXP || isVista || isWin10 || isDeX || isZorin;
+  const menuWidth = isXP ? 420 : isVista ? 440 : isWin10 ? 640 : isChromeOS ? 560 : isDeX ? 500 : isZorin ? 540 : 540;
   
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+  const clampedWidth = Math.min(menuWidth, vw - 24);
   let menuLeft = 12;
   if (!isLeftAligned && startPos && typeof window !== 'undefined') {
-    menuLeft = Math.max(12, Math.min(startPos.x + startPos.width / 2 - menuWidth / 2, window.innerWidth - menuWidth - 12));
+    menuLeft = Math.max(12, Math.min(startPos.x + startPos.width / 2 - clampedWidth / 2, vw - clampedWidth - 12));
   } else if (!isLeftAligned && typeof window !== 'undefined') {
-    menuLeft = (window.innerWidth - menuWidth) / 2;
+    menuLeft = (vw - clampedWidth) / 2;
   }
 
   return (
@@ -630,22 +633,113 @@ export function StartMenu({ open, onClose, startPos }: Props) {
           )}
 
           {/* ==============================================================
-              6. WINDOWS 11 / STANDARD MICA START MENU
+              6. ZORIN OS 17 ELEGANT START MENU
              ============================================================== */}
-          {!isXP && !isVista && !isWin10 && !isDeX && !isChromeOS && (
+          {isZorin && (
+            <motion.div
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 16 }}
+              transition={{ duration: 0.18 }}
+              className="fixed bottom-16 left-4 z-50 rounded-2xl shadow-2xl border border-sky-500/30 bg-slate-900/95 backdrop-blur-2xl flex overflow-hidden select-none text-white max-w-[calc(100vw-32px)]"
+              style={{ width: Math.min(540, vw - 32), height: 490 }}
+            >
+              {/* Left Column: Apps Grid with Categories */}
+              <div className="flex-1 flex flex-col p-4 border-r border-white/10 min-w-0">
+                {/* Search */}
+                <div className="flex items-center gap-2 bg-white/10 rounded-xl px-3 py-2 mb-3 border border-white/10">
+                  <Icon name="Search" size={14} className="text-sky-400" />
+                  <input
+                    autoFocus
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    placeholder="Type to search apps..."
+                    className="bg-transparent text-xs text-white placeholder-white/40 outline-none w-full"
+                  />
+                </div>
+
+                {/* All Pinned Apps Grid */}
+                <div className="flex-1 grid grid-cols-3 gap-2 overflow-y-auto pr-1">
+                  {filtered.map((app) => (
+                    <button
+                      key={app.appId}
+                      onClick={() => launch(app)}
+                      className="flex flex-col items-center gap-1.5 p-2 rounded-xl hover:bg-white/10 active:scale-95 transition group"
+                    >
+                      <div className="w-10 h-10 rounded-xl bg-sky-500/15 border border-sky-400/20 flex items-center justify-center group-hover:scale-105 transition shadow">
+                        <Icon name={app.icon} size={18} className="text-sky-300" />
+                      </div>
+                      <span className="text-[11px] text-white/90 text-center truncate max-w-full font-medium">
+                        {app.label}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Column: Zorin Shortcuts Sidebar */}
+              <div className="w-44 bg-black/40 p-4 flex flex-col justify-between shrink-0">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 pb-3 mb-2 border-b border-white/10">
+                    <div className="w-7 h-7 rounded-lg bg-sky-500 flex items-center justify-center text-black font-bold text-xs">
+                      Z
+                    </div>
+                    <span className="text-xs font-bold">Zorin OS 17</span>
+                  </div>
+
+                  <button onClick={() => { openApp('explorer'); onClose(); }} className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/10 text-xs text-white/80 transition">
+                    <Icon name="FolderOpen" size={14} className="text-sky-400" />
+                    <span>Home Files</span>
+                  </button>
+                  <button onClick={() => { openApp('appstore'); onClose(); }} className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/10 text-xs text-white/80 transition">
+                    <Icon name="Store" size={14} className="text-sky-400" />
+                    <span>Software Store</span>
+                  </button>
+                  <button onClick={() => { openApp('weather'); onClose(); }} className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/10 text-xs text-white/80 transition">
+                    <Icon name="CloudSun" size={14} className="text-sky-400" />
+                    <span>Weather</span>
+                  </button>
+                  <button onClick={() => { openApp('clock'); onClose(); }} className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/10 text-xs text-white/80 transition">
+                    <Icon name="Clock" size={14} className="text-sky-400" />
+                    <span>Clocks & Alarms</span>
+                  </button>
+                  <button onClick={() => { openApp('settings'); onClose(); }} className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-white/10 text-xs text-white/80 transition">
+                    <Icon name="Settings" size={14} className="text-sky-400" />
+                    <span>System Settings</span>
+                  </button>
+                </div>
+
+                <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+                  <span className="text-[11px] text-white/50 truncate">{user?.name || 'User'}</span>
+                  <button
+                    onClick={() => { onClose(); lockSystem(); }}
+                    className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/20 transition"
+                    title="Power Off / Lock"
+                  >
+                    <Icon name="Power" size={15} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ==============================================================
+              7. WINDOWS 11 / STANDARD MICA START MENU
+             ============================================================== */}
+          {!isXP && !isVista && !isWin10 && !isDeX && !isChromeOS && !isZorin && (
             <motion.div
               initial={{ opacity: 0, y: 16, scale: 0.97 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 16, scale: 0.97 }}
               transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-              className="glass fixed z-50 rounded-2xl p-5"
-              style={{ left: menuLeft, bottom: 48, width: menuWidth }}
+              className="glass fixed z-50 rounded-2xl p-5 max-w-[calc(100vw-24px)]"
+              style={{ left: menuLeft, bottom: 48, width: clampedWidth }}
             >
               {/* Header with AppLogo & OS Branding */}
               <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
                 <div className="flex items-center gap-2.5">
                   <AppLogo size={22} glow />
-                  <span className="text-sm font-semibold tracking-wide text-white/95">LiquidOS</span>
+                  <span className="text-sm font-semibold tracking-wide text-white/95">LiquidOS-4.1.0-Beta</span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono">Windows 11</span>
                 </div>
                 <div className="text-[11px] text-white/50">Mica Glass Start</div>

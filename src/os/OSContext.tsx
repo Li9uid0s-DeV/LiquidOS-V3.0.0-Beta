@@ -15,6 +15,7 @@ import {
   WindowsTaskbarStyle,
   DesignEngine,
   NebulaPreset,
+  LockScreenStyle,
   InstalledApp,
   StoreApp,
   STORE_CATALOG,
@@ -182,6 +183,12 @@ export interface OSContextValue {
   launchpadOpen: boolean;
   toggleLaunchpad: () => void;
 
+  // Lock Screen Customizer & Touch Mode
+  lockScreenStyle: LockScreenStyle;
+  setLockScreenStyle: (style: LockScreenStyle) => void;
+  touchMode: boolean;
+  setTouchMode: (val: boolean | ((prev: boolean) => boolean)) => void;
+
   // Sound effects
   playSound: (type: 'open' | 'click' | 'lock' | 'notify') => void;
 }
@@ -201,6 +208,9 @@ const APP_DEFAULTS: Record<AppId, { title: string; icon: string; width: number; 
   sysmon: { title: 'System Monitor', icon: 'Activity', width: 740, height: 520 },
   calendar: { title: 'Calendar & Tasks', icon: 'Calendar', width: 820, height: 550 },
   synth: { title: 'Monochrome Music', icon: 'Music', width: 880, height: 580 },
+  weather: { title: 'Cosmic Weather Forecast', icon: 'CloudSun', width: 840, height: 580 },
+  clock: { title: 'Clock & Alarms', icon: 'Clock', width: 780, height: 540 },
+  ai: { title: 'Liquid Copilot Pro AI', icon: 'Bot', width: 860, height: 600 },
 };
 
 const INITIAL_TASKS: CalendarTask[] = [
@@ -230,7 +240,7 @@ export function OSProvider({ children }: { children: ReactNode }) {
   const persistedSettings = loadPersisted<Record<string, unknown>>(LS_KEY, {});
 
   const [windows, setWindows] = useState<WindowState[]>([]);
-  const zCounter = useRef(10);
+  const zCounter = useRef(60);
   const idCounter = useRef(0);
 
   const [fileSystem, setFileSystem] = useState<VirtualFolder>(() =>
@@ -256,13 +266,12 @@ export function OSProvider({ children }: { children: ReactNode }) {
   const [designEngine, setDesignEngine] = useState<DesignEngine>(persistedSettings.designEngine ?? 'liquid-glass');
   const [nebulaPreset, setNebulaPreset] = useState<NebulaPreset>(persistedSettings.nebulaPreset ?? 'gargantua');
 
-  // Automated Tap-To-Morph Touch Matrix Listener
+  // Touch Device Detection without forcefully breaking window management
   useEffect(() => {
     const handleTouch = (e: TouchEvent | PointerEvent) => {
-      // If true finger touch event on a touch/hybrid device
       if ('pointerType' in e && e.pointerType !== 'touch') return;
-      // Fluidly switch to metro mode if currently on desktop windows shell
-      setShellMode((curr) => (curr === 'windows' ? 'metro' : curr));
+      // Mark touchMode as enabled for touch-friendly UI spacing & controls
+      setTouchMode(true);
     };
 
     window.addEventListener('touchstart', handleTouch, { passive: true });
@@ -369,6 +378,10 @@ export function OSProvider({ children }: { children: ReactNode }) {
   }, [triggerDynamicIsland]);
 
   const [locked, setLocked] = useState(false);
+  const [lockScreenStyle, setLockScreenStyle] = useState<LockScreenStyle>(
+    (persistedSettings.lockScreenStyle as LockScreenStyle) ?? 'hyperos3'
+  );
+  const [touchMode, setTouchMode] = useState<boolean>(persistedSettings.touchMode === true);
   const [user, setUserState] = useState<UserProfile | null>(persistedSettings.user ?? null);
   const [showWelcome, setWelcome] = useState(false);
 
@@ -376,8 +389,8 @@ export function OSProvider({ children }: { children: ReactNode }) {
   const [notifications, setNotifications] = useState<NotificationItem[]>(() => [
     {
       id: 'notif-welcome',
-      title: 'LiquidOS v4.0.0 Online',
-      message: 'System upgraded to Liquid Glass (#glass-distortion) with 5 multi-OS shells.',
+      title: 'LiquidOS-4.1.0-Beta Online',
+      message: 'System initialized with HyperOS 3, Zorin OS, and autonomous Liquid Copilot AI Studio.',
       time: 'Just now',
       app: 'Liquid Core',
       icon: 'Sparkles',
@@ -456,6 +469,8 @@ export function OSProvider({ children }: { children: ReactNode }) {
           liteMode,
           taskbarAlign,
           user,
+          lockScreenStyle,
+          touchMode,
         })
       );
     } catch {
@@ -478,6 +493,8 @@ export function OSProvider({ children }: { children: ReactNode }) {
     liteMode,
     taskbarAlign,
     user,
+    lockScreenStyle,
+    touchMode,
   ]);
 
   // Persist Apps
@@ -600,15 +617,21 @@ export function OSProvider({ children }: { children: ReactNode }) {
       const id = `win-${idCounter.current}`;
       zCounter.current += 1;
       const count = windows.length;
-      const width = opts?.width ?? def.width;
-      const height = opts?.height ?? def.height;
+      const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+      const width = Math.min(vw - 20, opts?.width ?? def.width);
+      const height = Math.min(vh - 70, opts?.height ?? def.height);
+      const maxX = Math.max(10, vw - width - 20);
+      const maxY = Math.max(10, vh - height - 60);
+      const x = Math.max(10, Math.min(maxX, 32 + (count % 8) * 32));
+      const y = Math.max(10, Math.min(maxY, 28 + (count % 8) * 26));
       const win: WindowState = {
         id,
         appId,
         title: opts?.title ?? def.title,
         icon: opts?.icon ?? def.icon,
-        x: Math.min(window.innerWidth - width - 40, Math.max(40, 100 + count * 28)),
-        y: Math.min(window.innerHeight - height - 80, Math.max(40, 60 + count * 24)),
+        x,
+        y,
         width,
         height,
         zIndex: zCounter.current,
@@ -644,15 +667,23 @@ export function OSProvider({ children }: { children: ReactNode }) {
       const id = `win-${idCounter.current}`;
       zCounter.current += 1;
       const count = windows.length;
+      const vw = typeof window !== 'undefined' ? window.innerWidth : 1200;
+      const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+      const width = Math.min(vw - 20, 840);
+      const height = Math.min(vh - 70, 560);
+      const maxX = Math.max(10, vw - width - 20);
+      const maxY = Math.max(10, vh - height - 60);
+      const x = Math.max(10, Math.min(maxX, 40 + (count % 8) * 32));
+      const y = Math.max(10, Math.min(maxY, 32 + (count % 8) * 26));
       const win: WindowState = {
         id,
         appId: app.appId,
         title: app.name,
         icon: app.icon,
-        x: 130 + count * 28,
-        y: 80 + count * 24,
-        width: 840,
-        height: 560,
+        x,
+        y,
+        width,
+        height,
         zIndex: zCounter.current,
         minimized: false,
         maximized: false,
@@ -1127,6 +1158,10 @@ export function OSProvider({ children }: { children: ReactNode }) {
     toggleControlCenter,
     launchpadOpen,
     toggleLaunchpad,
+    lockScreenStyle,
+    setLockScreenStyle,
+    touchMode,
+    setTouchMode,
     playSound,
   };
 

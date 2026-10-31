@@ -17,9 +17,9 @@ import { GameApp } from './apps/Game';
 import { AppStoreApp } from './apps/AppStore';
 import { SystemMonitorApp } from './apps/SystemMonitor';
 import { CalendarApp } from './apps/CalendarApp';
-import { SynthVisualizerApp } from './apps/SynthVisualizer';
-import { Calculator } from './apps/Calculator';
-import { TaskManager } from './apps/TaskManager';
+import { WeatherApp } from './apps/Weather';
+import { ClockApp } from './apps/ClockApp';
+import { AIAssistantApp } from './apps/AIAssistantApp';
 import { Icon } from './Icon';
 import { AppId, TASKBAR_APPS } from './types';
 import { AppLogo } from './AppLogo';
@@ -50,6 +50,12 @@ function renderApp(appId: string, payload?: unknown) {
       return <CalendarApp />;
     case 'synth':
       return <SynthVisualizerApp />;
+    case 'weather':
+      return <WeatherApp />;
+    case 'clock':
+      return <ClockApp />;
+    case 'ai':
+      return <AIAssistantApp />;
     default:
       return <CustomAppView payload={payload as { url?: string; isCustomApp?: boolean }} />;
   }
@@ -138,6 +144,9 @@ export function Desktop() {
 
   const DESKTOP_APPS_LIST = [
     { id: 'recycle', label: 'Recycle Bin', icon: 'Trash2' },
+    { id: 'ai', label: 'Liquid Copilot AI', icon: 'Bot' },
+    { id: 'weather', label: 'Cosmic Weather', icon: 'CloudSun' },
+    { id: 'clock', label: 'Clock & Alarms', icon: 'Clock' },
     { id: 'settings', label: 'Settings & OS', icon: 'Sparkles' },
     { id: 'game', label: 'Cosmic Velocity', icon: 'Flame' },
     { id: 'calculator', label: 'Calculator Pro', icon: 'Calculator' },
@@ -192,7 +201,7 @@ export function Desktop() {
             </div>
 
             <div className="flex items-center gap-3 font-medium text-[11px]">
-              <span className="text-white/60">v4.0.0</span>
+              <span className="text-white/60">v4.1.0-Beta</span>
               <Icon name="Wifi" size={13} />
               <Icon name="Battery" size={13} />
               <button
@@ -503,166 +512,274 @@ export function Desktop() {
       )}
 
       {/* ========================================================
-          5. WINDOWS 8 METRO LIVE TILES DASHBOARD (TRUE LIQUID GLASS)
+          5. AUTHENTIC WINDOWS 8 METRO START SCREEN (FLAT LIVE TILES)
          ======================================================== */}
-      {shellMode === 'metro' && (
-        <div className="fixed inset-0 z-30 p-6 sm:p-10 overflow-x-auto overflow-y-auto flex flex-col justify-between bg-black/40 backdrop-blur-md select-none">
-          <div className="flex items-center justify-between shrink-0 mb-6">
+      {(shellMode === 'metro' || shellMode === 'windows8') && (
+        <div className="fixed inset-0 z-30 p-6 sm:p-10 overflow-x-auto overflow-y-auto flex flex-col justify-between bg-[#001f3f]/85 backdrop-blur-2xl select-none font-sans">
+          {/* Windows 8 Top Header */}
+          <div className="flex items-center justify-between shrink-0 mb-6 max-w-7xl w-full mx-auto">
+            <div className="flex items-center gap-4">
+              <span className="text-3xl sm:text-4xl font-light text-white tracking-wide">Start</span>
+              <span className="text-xs px-2.5 py-1 rounded bg-[#00aba9]/30 text-[#00aba9] font-mono border border-[#00aba9]/40 font-bold">
+                Windows 8.1 Metro
+              </span>
+            </div>
+
             <div className="flex items-center gap-3">
-              <AppLogo size={36} glow />
-              <div>
-                <div className="text-2xl sm:text-3xl font-light text-white tracking-wider flex items-center gap-2">
-                  Start <span className="text-xs px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-mono">Metro Live</span>
+              <button
+                onClick={() => setShellMode('windows')}
+                className="px-4 py-2 bg-white/10 hover:bg-white/20 text-xs text-white font-medium flex items-center gap-2 transition active:scale-95 border border-white/10"
+              >
+                <Icon name="Monitor" size={14} className="text-cyan-300" />
+                <span>Desktop Mode</span>
+              </button>
+
+              <div className="flex items-center gap-2 pl-3 border-l border-white/20">
+                <div className="w-8 h-8 rounded-full bg-[#0050ef] flex items-center justify-center text-white text-xs font-bold">
+                  {user?.name?.[0] || 'U'}
                 </div>
-                <div className="text-xs text-white/50">Fluid Touch Grid Matrix</div>
-              </div>
-            </div>
-            <button
-              onClick={() => setShellMode('windows')}
-              className="px-3.5 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-xs text-white flex items-center gap-2 transition active:scale-95"
-            >
-              <Icon name="Monitor" size={14} className="text-cyan-300" />
-              <span>Desktop View</span>
-            </button>
-          </div>
-
-          {/* Responsive Liquid Glass Live Tiles Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 my-auto max-w-6xl w-full mx-auto py-4">
-            {/* Tile 1: 3D Cosmic Velocity */}
-            <div
-              onClick={() => { openApp('game'); setShellMode('windows'); }}
-              className="glass p-5 rounded-2xl cursor-pointer flex flex-col justify-between h-40 hover:scale-[1.02] active:scale-98 transition group bg-gradient-to-br from-rose-500/20 to-orange-600/30"
-            >
-              <div className="flex justify-between items-start">
-                <Icon name="Flame" size={26} className="text-orange-400 group-hover:rotate-12 transition" />
-                <span className="text-[10px] uppercase font-mono tracking-widest text-orange-300/70">Arcade 3D</span>
-              </div>
-              <div>
-                <div className="text-base font-semibold text-white">Cosmic Velocity</div>
-                <div className="text-xs text-white/70">Raw Three.js Hovercraft Racer</div>
-              </div>
-            </div>
-
-            {/* Tile 2: Calculator Pro */}
-            <div
-              onClick={() => { openApp('calculator'); setShellMode('windows'); }}
-              className="glass p-5 rounded-2xl cursor-pointer flex flex-col justify-between h-40 hover:scale-[1.02] active:scale-98 transition group bg-gradient-to-br from-amber-500/20 to-yellow-600/30"
-            >
-              <div className="flex justify-between items-start">
-                <Icon name="Calculator" size={26} className="text-amber-400 group-hover:scale-110 transition" />
-                <span className="text-[10px] uppercase font-mono tracking-widest text-amber-300/70">Utility</span>
-              </div>
-              <div>
-                <div className="text-base font-semibold text-white">Calculator Pro</div>
-                <div className="text-xs text-white/70">Scientific & Memory Precision</div>
-              </div>
-            </div>
-
-            {/* Tile 3: Task Manager */}
-            <div
-              onClick={() => { openApp('taskmanager'); setShellMode('windows'); }}
-              className="glass p-5 rounded-2xl cursor-pointer flex flex-col justify-between h-40 hover:scale-[1.02] active:scale-98 transition group bg-gradient-to-br from-cyan-500/20 to-blue-600/30"
-            >
-              <div className="flex justify-between items-start">
-                <Icon name="Cpu" size={26} className="text-cyan-400 group-hover:scale-110 transition" />
-                <span className="text-[10px] uppercase font-mono tracking-widest text-cyan-300/70">System</span>
-              </div>
-              <div>
-                <div className="text-base font-semibold text-white">Task Manager</div>
-                <div className="text-xs text-white/70">Live Process Telemetry & Kill</div>
-              </div>
-            </div>
-
-            {/* Tile 4: Calendar & Tasks */}
-            <div
-              onClick={() => { openApp('calendar'); setShellMode('windows'); }}
-              className="glass p-5 rounded-2xl cursor-pointer flex flex-col justify-between h-40 hover:scale-[1.02] active:scale-98 transition group bg-gradient-to-br from-emerald-500/20 to-teal-600/30"
-            >
-              <div className="flex justify-between items-start">
-                <Icon name="Calendar" size={26} className="text-emerald-400 group-hover:scale-110 transition" />
-                <span className="text-[10px] uppercase font-mono tracking-widest text-emerald-300/70">{timeStr}</span>
-              </div>
-              <div>
-                <div className="text-base font-semibold text-white">Agenda & Tasks</div>
-                <div className="text-xs text-white/70">{calendarTasks.length} Scheduled Operations</div>
-              </div>
-            </div>
-
-            {/* Tile 5: Monochrome Music */}
-            <div
-              onClick={() => { openApp('synth'); setShellMode('windows'); }}
-              className="glass p-5 rounded-2xl cursor-pointer flex flex-col justify-between h-40 hover:scale-[1.02] active:scale-98 transition group bg-gradient-to-br from-orange-500/20 to-amber-600/30"
-            >
-              <div className="flex justify-between items-start">
-                <Icon name="Music" size={26} className="text-orange-400 group-hover:scale-110 transition" />
-                <span className="text-[10px] uppercase font-mono tracking-widest text-orange-300/70">Hi-Fi Proxy</span>
-              </div>
-              <div>
-                <div className="text-base font-semibold text-white">Monochrome Music</div>
-                <div className="text-xs text-white/70">Lossless Streaming & Synced Lyrics</div>
-              </div>
-            </div>
-
-            {/* Tile 6: Liquid Browser */}
-            <div
-              onClick={() => { openApp('browser'); setShellMode('windows'); }}
-              className="glass p-5 rounded-2xl cursor-pointer flex flex-col justify-between h-40 hover:scale-[1.02] active:scale-98 transition group bg-gradient-to-br from-blue-500/20 to-sky-600/30"
-            >
-              <div className="flex justify-between items-start">
-                <Icon name="Globe" size={26} className="text-sky-400 group-hover:scale-110 transition" />
-                <span className="text-[10px] uppercase font-mono tracking-widest text-sky-300/70">Web</span>
-              </div>
-              <div>
-                <div className="text-base font-semibold text-white">Liquid Browser</div>
-                <div className="text-xs text-white/70">Ultra-fast Portal Navigation</div>
-              </div>
-            </div>
-
-            {/* Tile 7: File Explorer */}
-            <div
-              onClick={() => { openApp('explorer'); setShellMode('windows'); }}
-              className="glass p-5 rounded-2xl cursor-pointer flex flex-col justify-between h-40 hover:scale-[1.02] active:scale-98 transition group bg-gradient-to-br from-teal-500/20 to-cyan-600/30"
-            >
-              <div className="flex justify-between items-start">
-                <Icon name="FolderOpen" size={26} className="text-teal-400 group-hover:scale-110 transition" />
-                <span className="text-[10px] uppercase font-mono tracking-widest text-teal-300/70">VFS</span>
-              </div>
-              <div>
-                <div className="text-base font-semibold text-white">File Explorer</div>
-                <div className="text-xs text-white/70">Cloud & Virtual Disk Storage</div>
-              </div>
-            </div>
-
-            {/* Tile 8: Terminal */}
-            <div
-              onClick={() => { openApp('terminal'); setShellMode('windows'); }}
-              className="glass p-5 rounded-2xl cursor-pointer flex flex-col justify-between h-40 hover:scale-[1.02] active:scale-98 transition group bg-gradient-to-br from-slate-500/20 to-zinc-700/30"
-            >
-              <div className="flex justify-between items-start">
-                <Icon name="SquareTerminal" size={26} className="text-emerald-400 group-hover:scale-110 transition" />
-                <span className="text-[10px] uppercase font-mono tracking-widest text-emerald-300/70">Shell</span>
-              </div>
-              <div>
-                <div className="text-base font-semibold text-white">Liquid Terminal</div>
-                <div className="text-xs text-white/70">Interactive CLI & Scripts</div>
+                <span className="text-xs text-white/90 font-medium hidden sm:inline">{user?.name || 'Administrator'}</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center justify-between text-xs text-white/50 font-mono shrink-0 pt-3">
+          {/* Windows 8 Live Tiles Groups (Horizontally & Vertically Scrollable) */}
+          <div className="my-auto max-w-7xl w-full mx-auto py-2">
+            <div
+              className="flex gap-8 overflow-x-auto pb-4 pt-1 touch-pan-x scrollbar-thin scroll-smooth"
+              onWheel={(e) => {
+                if (e.deltaY) {
+                  e.currentTarget.scrollLeft += e.deltaY;
+                }
+              }}
+            >
+              {/* GROUP 1: Productivity & AI */}
+              <div className="shrink-0 space-y-2">
+                <div className="text-xs uppercase font-bold tracking-wider text-white/60 mb-2 pl-1">Productivity & AI</div>
+                <div className="grid grid-cols-2 gap-2.5 w-72 sm:w-80">
+                  {/* AI Copilot Pro (Wide Tile) */}
+                  <div
+                    onClick={() => { openApp('ai'); }}
+                    className="col-span-2 h-28 bg-[#0050ef] hover:brightness-110 active:scale-98 p-3 flex flex-col justify-between text-white cursor-pointer transition shadow-lg group relative overflow-hidden"
+                  >
+                    <div className="flex justify-between items-start">
+                      <Icon name="Bot" size={26} className="text-white group-hover:scale-110 transition" />
+                      <span className="text-[10px] font-mono bg-black/20 px-1.5 py-0.5 uppercase tracking-wider">Gemini 3.8</span>
+                    </div>
+                    <div>
+                      <div className="text-base font-bold leading-tight">Liquid Copilot AI Studio</div>
+                      <div className="text-[11px] text-white/80">Autonomous OS Assistant</div>
+                    </div>
+                  </div>
+
+                  {/* Liquid Browser */}
+                  <div
+                    onClick={() => { openApp('browser'); }}
+                    className="h-28 bg-[#00aba9] hover:brightness-110 active:scale-98 p-3 flex flex-col justify-between text-white cursor-pointer transition shadow-lg group"
+                  >
+                    <Icon name="Globe" size={24} className="group-hover:scale-110 transition" />
+                    <span className="text-xs font-bold">Browser</span>
+                  </div>
+
+                  {/* File Explorer */}
+                  <div
+                    onClick={() => { openApp('explorer'); }}
+                    className="h-28 bg-[#f0a30a] hover:brightness-110 active:scale-98 p-3 flex flex-col justify-between text-white cursor-pointer transition shadow-lg group"
+                  >
+                    <Icon name="FolderOpen" size={24} className="group-hover:scale-110 transition" />
+                    <span className="text-xs font-bold">File Explorer</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* GROUP 2: Orbital Glance & Alarms */}
+              <div className="shrink-0 space-y-2">
+                <div className="text-xs uppercase font-bold tracking-wider text-white/60 mb-2 pl-1">Glance & Time</div>
+                <div className="grid grid-cols-2 gap-2.5 w-72 sm:w-80">
+                  {/* Weather Live Tile (Wide) */}
+                  <div
+                    onClick={() => { openApp('weather'); }}
+                    className="col-span-2 h-28 bg-[#1ba1e2] hover:brightness-110 active:scale-98 p-3 flex flex-col justify-between text-white cursor-pointer transition shadow-lg group"
+                  >
+                    <div className="flex justify-between items-start">
+                      <Icon name="CloudSun" size={28} className="text-white" />
+                      <div className="text-right">
+                        <span className="text-2xl font-light font-mono">21°C</span>
+                        <div className="text-[10px] text-white/80">Tokyo · Sunny</div>
+                      </div>
+                    </div>
+                    <div className="text-xs font-bold flex justify-between items-center">
+                      <span>Cosmic Weather</span>
+                      <span className="text-[10px] font-mono opacity-80">H:24° L:15°</span>
+                    </div>
+                  </div>
+
+                  {/* Clock & Alarms */}
+                  <div
+                    onClick={() => { openApp('clock'); }}
+                    className="h-28 bg-[#7158e2] hover:brightness-110 active:scale-98 p-3 flex flex-col justify-between text-white cursor-pointer transition shadow-lg group"
+                  >
+                    <Icon name="Clock" size={24} />
+                    <div>
+                      <div className="text-xs font-bold">Clock & Alarm</div>
+                      <div className="text-[10px] font-mono opacity-80">{timeStr}</div>
+                    </div>
+                  </div>
+
+                  {/* Calendar & Tasks */}
+                  <div
+                    onClick={() => { openApp('calendar'); }}
+                    className="h-28 bg-[#00a300] hover:brightness-110 active:scale-98 p-3 flex flex-col justify-between text-white cursor-pointer transition shadow-lg group"
+                  >
+                    <Icon name="Calendar" size={24} />
+                    <div>
+                      <div className="text-xs font-bold">Calendar</div>
+                      <div className="text-[10px] opacity-80">{calendarTasks.length} Tasks</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* GROUP 3: Gaming & Audio */}
+              <div className="shrink-0 space-y-2">
+                <div className="text-xs uppercase font-bold tracking-wider text-white/60 mb-2 pl-1">Games & Media</div>
+                <div className="grid grid-cols-2 gap-2.5 w-72 sm:w-80">
+                  {/* 3D Cosmic Velocity (Wide Tile) */}
+                  <div
+                    onClick={() => { openApp('game'); }}
+                    className="col-span-2 h-28 bg-[#d80073] hover:brightness-110 active:scale-98 p-3 flex flex-col justify-between text-white cursor-pointer transition shadow-lg group"
+                  >
+                    <div className="flex justify-between items-start">
+                      <Icon name="Flame" size={26} className="text-white group-hover:rotate-12 transition" />
+                      <span className="text-[10px] font-mono bg-black/20 px-1.5 py-0.5 uppercase tracking-wider">3D Racer</span>
+                    </div>
+                    <div>
+                      <div className="text-base font-bold">Cosmic Velocity 3D</div>
+                      <div className="text-[11px] text-white/80">Touch & Keyboard Glider</div>
+                    </div>
+                  </div>
+
+                  {/* Monochrome Music */}
+                  <div
+                    onClick={() => { openApp('synth'); }}
+                    className="h-28 bg-[#e67e22] hover:brightness-110 active:scale-98 p-3 flex flex-col justify-between text-white cursor-pointer transition shadow-lg group"
+                  >
+                    <Icon name="Music" size={24} />
+                    <span className="text-xs font-bold">Monochrome Music</span>
+                  </div>
+
+                  {/* App Store */}
+                  <div
+                    onClick={() => { openApp('appstore'); }}
+                    className="h-28 bg-[#0050ef] hover:brightness-110 active:scale-98 p-3 flex flex-col justify-between text-white cursor-pointer transition shadow-lg group"
+                  >
+                    <Icon name="Store" size={24} />
+                    <span className="text-xs font-bold">Store</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* GROUP 4: System Tools */}
+              <div className="shrink-0 space-y-2">
+                <div className="text-xs uppercase font-bold tracking-wider text-white/60 mb-2 pl-1">System & Tools</div>
+                <div className="grid grid-cols-2 gap-2.5 w-72 sm:w-80">
+                  {/* Task Manager */}
+                  <div
+                    onClick={() => { openApp('taskmanager'); }}
+                    className="h-28 bg-[#2d89ef] hover:brightness-110 active:scale-98 p-3 flex flex-col justify-between text-white cursor-pointer transition shadow-lg group"
+                  >
+                    <Icon name="Cpu" size={24} />
+                    <span className="text-xs font-bold">Task Manager</span>
+                  </div>
+
+                  {/* Calculator */}
+                  <div
+                    onClick={() => { openApp('calculator'); }}
+                    className="h-28 bg-[#a200ff] hover:brightness-110 active:scale-98 p-3 flex flex-col justify-between text-white cursor-pointer transition shadow-lg group"
+                  >
+                    <Icon name="Calculator" size={24} />
+                    <span className="text-xs font-bold">Calculator Pro</span>
+                  </div>
+
+                  {/* Terminal */}
+                  <div
+                    onClick={() => { openApp('terminal'); }}
+                    className="h-28 bg-[#333333] hover:brightness-110 active:scale-98 p-3 flex flex-col justify-between text-white cursor-pointer transition shadow-lg group"
+                  >
+                    <Icon name="SquareTerminal" size={24} />
+                    <span className="text-xs font-bold">Terminal</span>
+                  </div>
+
+                  {/* Settings */}
+                  <div
+                    onClick={() => { openApp('settings'); }}
+                    className="h-28 bg-[#00a300] hover:brightness-110 active:scale-98 p-3 flex flex-col justify-between text-white cursor-pointer transition shadow-lg group"
+                  >
+                    <Icon name="Settings" size={24} />
+                    <span className="text-xs font-bold">Settings</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Windows 8 All Apps Section (Launch ANY app directly) */}
+          <div className="border-t border-white/10 pt-4 max-w-7xl w-full mx-auto">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs uppercase font-bold tracking-widest text-white/50 flex items-center gap-1.5">
+                <Icon name="ChevronDown" size={14} className="text-cyan-400" /> All Apps
+              </span>
+              <span className="text-[11px] text-white/40 font-mono">Tap any icon to launch</span>
+            </div>
+
+            <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-thin">
+              {DESKTOP_APPS_LIST.map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => handleAppClick(item.id as AppId)}
+                  className="flex flex-col items-center gap-1.5 p-2 rounded hover:bg-white/10 active:scale-95 transition shrink-0 w-20"
+                >
+                  <div className="w-10 h-10 bg-white/15 flex items-center justify-center text-white shadow">
+                    <Icon name={item.icon} size={20} className="text-cyan-300" />
+                  </div>
+                  <span className="text-[10px] text-white/80 font-medium truncate max-w-full">
+                    {item.label}
+                  </span>
+                </button>
+              ))}
+
+              {installedApps.map((app) => (
+                <button
+                  key={app.id}
+                  onClick={() => launchInstalledApp(app.id)}
+                  className="flex flex-col items-center gap-1.5 p-2 rounded hover:bg-white/10 active:scale-95 transition shrink-0 w-20"
+                >
+                  <div className="w-10 h-10 bg-orange-500/20 border border-orange-400/30 flex items-center justify-center text-white shadow">
+                    <Icon name={app.icon} size={20} className="text-orange-300" />
+                  </div>
+                  <span className="text-[10px] text-white/80 font-medium truncate max-w-full">
+                    {app.name}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-between text-xs text-white/40 font-mono shrink-0 pt-3 max-w-7xl w-full mx-auto border-t border-white/5">
             <div className="flex items-center gap-2">
               <AppLogo size={16} />
-              <span>LiquidOS v4.0.0 Metro Engine</span>
+              <span>LiquidOS-4.1.0-Beta Metro Live</span>
             </div>
-            <div>Swipe or tap to launch tiles</div>
+            <div>Swipe horizontally or tap to launch tiles</div>
           </div>
         </div>
       )}
 
       {/* ========================================================
-          DESKTOP ICONS GRID (Windows, XP, Vista, 10, 11, DeX, ChromeOS)
+          DESKTOP ICONS GRID (Windows, XP, Vista, 10, 11, DeX, ChromeOS, Zorin)
          ======================================================== */}
-      {['windows', 'windows11', 'windows10', 'vista', 'xp', 'dex', 'chromeos'].includes(shellMode) && (
+      {['windows', 'windows11', 'windows10', 'vista', 'xp', 'dex', 'chromeos', 'zorin'].includes(shellMode) && (
         <div className="absolute top-4 left-4 z-10 flex flex-col flex-wrap gap-2 max-h-[calc(100vh-64px)] pointer-events-auto">
           {DESKTOP_APPS_LIST.map((item) => (
             <button
@@ -808,14 +925,14 @@ export function Desktop() {
           >
             <Icon name="Sparkles" size={18} className="text-orange-400" />
             <span className="text-sm text-white/90 font-medium">
-              Welcome back, {user.name}! LiquidOS v4.0.0 initialized with #glass-distortion.
+              Welcome back, {user.name}! LiquidOS-4.1.0-Beta initialized with #glass-distortion.
             </span>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Desktop Shell Mode Taskbar (Windows 11, 10, Vista, XP, DeX, ChromeOS) */}
-      {['windows', 'windows11', 'windows10', 'vista', 'xp', 'dex', 'chromeos'].includes(shellMode) && (
+      {/* Desktop Shell Mode Taskbar (Windows 11, 10, Vista, XP, DeX, ChromeOS, Zorin) */}
+      {['windows', 'windows11', 'windows10', 'vista', 'xp', 'dex', 'chromeos', 'zorin'].includes(shellMode) && (
         <Taskbar onLock={lockSystem} />
       )}
 

@@ -10,7 +10,10 @@ export type AppId =
   | 'calendar'
   | 'synth'
   | 'calculator'
-  | 'taskmanager';
+  | 'taskmanager'
+  | 'weather'
+  | 'clock'
+  | 'ai';
 
 // Custom installed apps use a string ID prefixed with 'custom:'
 export type WindowAppId = AppId | string;
@@ -41,6 +44,9 @@ export const TASKBAR_APPS: TaskbarApp[] = [
   { appId: 'explorer', label: 'File Explorer', icon: 'FolderOpen' },
   { appId: 'browser', label: 'Liquid Browser', icon: 'Globe' },
   { appId: 'terminal', label: 'Terminal', icon: 'SquareTerminal' },
+  { appId: 'ai', label: 'Liquid Copilot AI', icon: 'Bot' },
+  { appId: 'weather', label: 'Cosmic Weather', icon: 'CloudSun' },
+  { appId: 'clock', label: 'Clock & Alarms', icon: 'Clock' },
   { appId: 'notepad', label: 'Notepad', icon: 'FileText' },
   { appId: 'calculator', label: 'Calculator Pro', icon: 'Calculator' },
   { appId: 'taskmanager', label: 'Task Manager', icon: 'Cpu' },
@@ -64,11 +70,13 @@ export type ShellMode =
   | 'chromeos'
   | 'mac'
   | 'ubuntu'
+  | 'zorin'
   | 'android'
   | 'ios'
   | 'metro';
 export type WindowsTaskbarStyle = 'modern' | 'classic';
-export type DesignEngine = 'liquid-glass' | 'frosted-blur' | 'windows-mica' | 'dark-slate' | 'cyberpunk-neon';
+export type DesignEngine = 'liquid-glass' | 'frosted-blur' | 'windows-mica' | 'dark-slate' | 'cyberpunk-neon' | 'miuix-glass';
+export type LockScreenStyle = 'hyperos3' | 'miuix' | 'windows-hello' | 'cosmic-liquid';
 export type NebulaPreset = 'gargantua' | 'ultraviolet' | 'indigo' | 'cyan-quasar' | 'solar-flare';
 
 export interface NotificationItem {
@@ -216,6 +224,42 @@ export const STORE_CATALOG: StoreApp[] = [
     rating: 4.6,
     size: '800 KB',
     version: '1.9.0',
+  },
+  {
+    id: 'weather',
+    name: 'Cosmic Weather Forecast',
+    description: 'Dynamic real-time atmospheric radar, 7-day orbital forecasts, and meteorological telemetry.',
+    category: 'utilities',
+    icon: 'CloudSun',
+    author: 'Orbital Weather Lab',
+    rating: 4.9,
+    size: '2.4 MB',
+    version: '4.1.0',
+    builtInAppId: 'weather',
+  },
+  {
+    id: 'clock',
+    name: 'Clock, Alarms & Chrono',
+    description: 'World clocks across galactic time zones, customizable alarms with audio synthesizers, and precision lap stopwatch.',
+    category: 'utilities',
+    icon: 'Clock',
+    author: 'Liquid Chronometry',
+    rating: 4.9,
+    size: '1.9 MB',
+    version: '4.1.0',
+    builtInAppId: 'clock',
+  },
+  {
+    id: 'ai',
+    name: 'Liquid Copilot Pro AI',
+    description: 'Autonomous AI assistant with Gemini 3.8 Flash, system automation, code generation, and prompt templates.',
+    category: 'utilities',
+    icon: 'Bot',
+    author: 'AI Studio Core',
+    rating: 5.0,
+    size: '4.8 MB',
+    version: '4.1.0',
+    builtInAppId: 'ai',
   },
 ];
 
@@ -570,6 +614,58 @@ export const STORE_THEMES: StoreTheme[] = [
       cornerRadius: 16,
       transparency: 32,
       accentColor: '#a855f7',
+    },
+  },
+  {
+    id: 'zorin-pro',
+    name: 'Zorin OS 17 Pro Elegance',
+    nameJa: 'Zorin OS 17 プロ・エレガンス',
+    description: 'Clean modern Linux desktop with floating pill dock, categorized quick launcher, high-contrast cyan accents, and fluid transitions.',
+    descriptionJa: '洗練されたモダンLinux。フローティングピルドック、整理されたカテゴリランチャー、鮮やかなシアンアクセント。',
+    author: 'Zorin Group',
+    category: 'modern',
+    rating: 4.9,
+    downloads: '1.7M',
+    version: '17.1 Pro',
+    size: '4.5 MB',
+    badge: 'Linux Pro',
+    previewGradient: 'from-slate-950 via-sky-950 to-blue-800',
+    accentColor: '#0ea5e9',
+    config: {
+      shellMode: 'zorin',
+      designEngine: 'frosted-blur',
+      wallpaper: 'aurora',
+      theme: 'dark',
+      blurAmount: 16,
+      cornerRadius: 12,
+      transparency: 20,
+      accentColor: '#0ea5e9',
+    },
+  },
+  {
+    id: 'hyperos-miuix',
+    name: 'HyperOS 3 & MIUIx Flagship',
+    nameJa: 'HyperOS 3 & MIUIx フラッグシップ',
+    description: 'Next-gen fluid hyper-glass, depth effect lock screen clock, squircle icons, smart control center, and rapid touch response.',
+    descriptionJa: '次世代ハイパーガラスUI、立体感ある深度時計ロック画面、スクワークルアイコン、洗練されたコントロールセンター。',
+    author: 'Xiaomi Design Lab',
+    category: 'modern',
+    rating: 5.0,
+    downloads: '3.8M',
+    version: '3.0.4',
+    size: '5.6 MB',
+    badge: 'HyperOS 3',
+    previewGradient: 'from-zinc-950 via-orange-950 to-amber-700',
+    accentColor: '#f97316',
+    config: {
+      shellMode: 'windows',
+      designEngine: 'miuix-glass',
+      wallpaper: 'bloom',
+      theme: 'dark',
+      blurAmount: 22,
+      cornerRadius: 18,
+      transparency: 28,
+      accentColor: '#f97316',
     },
   },
 ];

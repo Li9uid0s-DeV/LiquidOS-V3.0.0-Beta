@@ -368,6 +368,16 @@ export function AIAssistant() {
 
                 <div className="flex items-center gap-1">
                   <button
+                    onClick={() => {
+                      setExpanded(false);
+                      openApp('ai');
+                    }}
+                    className="p-1.5 rounded-lg text-white/60 hover:bg-white/10 hover:text-white transition"
+                    title="独立ウィンドウで開く"
+                  >
+                    <Icon name="ExternalLink" size={14} />
+                  </button>
+                  <button
                     onClick={clearChat}
                     className="p-1.5 rounded-lg text-white/50 hover:bg-white/10 hover:text-white transition"
                     title="チャットを消去"
