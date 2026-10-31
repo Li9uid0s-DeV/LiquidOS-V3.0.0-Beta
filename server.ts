@@ -158,10 +158,106 @@ async function startServer() {
   app.get('/api/health', (_req, res) => {
     res.json({
       status: 'ok',
-      os: 'LiquidOS 3.0.0',
+      os: 'LiquidOS-4.1.0-Beta',
       geminiAvailable: Boolean(process.env.GEMINI_API_KEY),
       model: 'gemini-3.8-flash',
     });
+  });
+
+  // Web Reverse Proxy Endpoint for Liquid Browser (bypasses X-Frame-Options / CSP)
+  app.get('/api/proxy', async (req, res) => {
+    const rawUrl = req.query.url as string;
+    if (!rawUrl) {
+      return res.status(400).send('URL query parameter required');
+    }
+
+    let targetUrl = rawUrl;
+    if (!/^https?:\/\//i.test(targetUrl)) {
+      targetUrl = 'https://' + targetUrl;
+    }
+
+    try {
+      const parsed = new URL(targetUrl);
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 12000);
+
+      const response = await fetch(targetUrl, {
+        signal: controller.signal,
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+          Accept:
+            'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9,ja;q=0.8',
+        },
+      });
+      clearTimeout(timeout);
+
+      const contentType = response.headers.get('content-type') || 'text/html; charset=utf-8';
+
+      // Set headers allowing iframe embedding
+      res.setHeader('Content-Type', contentType);
+      res.removeHeader('X-Frame-Options');
+      res.removeHeader('Content-Security-Policy');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+
+      if (contentType.includes('text/html')) {
+        let html = await response.text();
+        const baseHref = `${parsed.protocol}//${parsed.host}${parsed.pathname.substring(0, parsed.pathname.lastIndexOf('/') + 1) || '/'}`;
+
+        // Inject <base> tag and script to rewrite link clicks through /api/proxy
+        const scriptInjection = `
+          <base href="${baseHref}">
+          <script>
+            (function() {
+              window.addEventListener('click', function(e) {
+                var a = e.target.closest('a');
+                if (a && a.href && !a.href.startsWith('javascript:') && !a.href.startsWith('#')) {
+                  e.preventDefault();
+                  window.location.href = '/api/proxy?url=' + encodeURIComponent(a.href);
+                }
+              }, true);
+            })();
+          </script>
+        `;
+
+        if (/<head[^>]*>/i.test(html)) {
+          html = html.replace(/<head[^>]*>/i, (match) => `${match}${scriptInjection}`);
+        } else {
+          html = scriptInjection + html;
+        }
+
+        return res.send(html);
+      } else {
+        // Stream images, css, scripts directly
+        const buffer = await response.arrayBuffer();
+        return res.send(Buffer.from(buffer));
+      }
+    } catch (err: unknown) {
+      console.error('Proxy error:', err);
+      return res.status(502).send(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="utf-8">
+            <style>
+              body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #09090b; color: #f4f4f5; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+              .card { max-width: 480px; padding: 2rem; background: rgba(255,255,255,0.04); border-radius: 1rem; border: 1px solid rgba(255,255,255,0.08); text-align: center; }
+              h1 { font-size: 1.1rem; margin-bottom: 0.5rem; color: #f43f5e; }
+              p { font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-bottom: 1.5rem; }
+              button { background: #0ea5e9; color: #000; font-weight: 600; border: none; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <h1>Connection Timeout or Blocked</h1>
+              <p>The proxy could not load: <code>${rawUrl}</code>. Check the URL or connection.</p>
+              <button onclick="window.location.reload()">Retry</button>
+            </div>
+          </body>
+        </html>
+      `);
+    }
   });
 
   // AI Chat Endpoint with Gemini 3.8 Flash

@@ -220,30 +220,31 @@ export function WeatherApp() {
   return (
     <div className="h-full w-full flex flex-col bg-slate-950 text-white select-none overflow-y-auto">
       {/* Top Header & City Switcher Bar */}
-      <div className="p-4 border-b border-white/10 bg-slate-900/60 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 sticky top-0 z-20">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-sky-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-sky-500/20">
-            <Icon name="CloudSun" size={18} className="text-white" />
+      <div className="p-4 border-b border-white/[0.06] bg-slate-900/40 backdrop-blur-xl flex flex-wrap items-center justify-between gap-3 shrink-0 sticky top-0 z-20">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-cyan-500/10 border border-cyan-400/20 flex items-center justify-center text-cyan-400">
+            <Icon name="CloudSun" size={18} />
           </div>
           <div>
-            <h1 className="text-sm font-bold tracking-tight text-white flex items-center gap-2">
-              Cosmic Weather
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300">Live Satellite</span>
-            </h1>
-            <p className="text-[11px] text-white/50">{city.name}, {city.country}</p>
+            <div className="text-sm font-bold text-white tracking-tight flex items-center gap-2">
+              <span>Weather</span>
+              <span className="text-white/40 font-normal">·</span>
+              <span className="text-xs text-white/60 font-normal">{city.name}, {city.country}</span>
+            </div>
+            <p className="text-[11px] text-white/40">Updated just now</p>
           </div>
         </div>
 
-        {/* City Select Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto py-1 max-w-full">
+        {/* City Select Segmented Control */}
+        <div className="flex items-center gap-1 bg-white/[0.03] p-1 rounded-xl border border-white/[0.04]">
           {CITIES.map((c) => (
             <button
               key={c.id}
               onClick={() => { playSound('click'); setSelectedCityId(c.id); }}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition shrink-0 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium transition ${
                 c.id === selectedCityId
-                  ? 'bg-cyan-500 text-black font-semibold shadow-md shadow-cyan-500/30'
-                  : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
+                  ? 'bg-white/[0.1] text-white font-semibold shadow-sm'
+                  : 'text-white/60 hover:text-white hover:bg-white/[0.03]'
               }`}
             >
               {c.name}
@@ -253,16 +254,16 @@ export function WeatherApp() {
 
         {/* Unit Toggle and Refresh */}
         <div className="flex items-center gap-2 shrink-0">
-          <div className="flex rounded-xl bg-white/10 p-0.5 border border-white/10">
+          <div className="flex rounded-lg bg-white/[0.04] p-0.5 border border-white/[0.06]">
             <button
               onClick={() => setUnit('C')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${unit === 'C' ? 'bg-cyan-400 text-black' : 'text-white/60 hover:text-white'}`}
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition ${unit === 'C' ? 'bg-cyan-500 text-black' : 'text-white/60 hover:text-white'}`}
             >
               °C
             </button>
             <button
               onClick={() => setUnit('F')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition ${unit === 'F' ? 'bg-cyan-400 text-black' : 'text-white/60 hover:text-white'}`}
+              className={`px-2.5 py-1 rounded-md text-xs font-semibold transition ${unit === 'F' ? 'bg-cyan-500 text-black' : 'text-white/60 hover:text-white'}`}
             >
               °F
             </button>
@@ -270,60 +271,58 @@ export function WeatherApp() {
 
           <button
             onClick={handleRefresh}
-            className={`p-2 rounded-xl bg-white/10 hover:bg-white/20 transition ${refreshing ? 'animate-spin text-cyan-400' : 'text-white/70'}`}
+            className={`p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] transition ${refreshing ? 'animate-spin text-cyan-400' : 'text-white/70'}`}
             title="Refresh Radar"
           >
-            <Icon name="RotateCw" size={15} />
+            <Icon name="RotateCw" size={14} />
           </button>
         </div>
       </div>
 
       {/* Main Weather Display Hero */}
-      <div className="p-6 max-w-5xl mx-auto w-full space-y-6">
-        <div className="relative rounded-3xl p-6 sm:p-8 overflow-hidden bg-gradient-to-br from-cyan-950/60 via-slate-900/80 to-blue-950/70 border border-cyan-500/20 shadow-2xl backdrop-blur-2xl">
+      <div className="p-6 max-w-5xl mx-auto w-full space-y-5">
+        <div className="relative rounded-2xl p-6 sm:p-8 overflow-hidden bg-gradient-to-br from-cyan-950/30 via-slate-900/60 to-blue-950/40 border border-white/[0.06] shadow-xl backdrop-blur-xl">
           {/* Ambient weather aura */}
           <div className="absolute top-0 right-0 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
             <div>
-              <div className="flex items-center gap-2 text-cyan-300 text-xs font-mono uppercase tracking-widest mb-1">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-                Current Conditions
+              <div className="text-cyan-400 text-xs font-medium tracking-wide mb-1 flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                <span>Current Observation</span>
               </div>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">{city.name}</h2>
-              <div className="text-white/60 text-sm mt-0.5">{city.condition} · Humidity {city.humidity}%</div>
+              <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight">{city.name}</h2>
+              <div className="text-white/60 text-xs mt-1">{city.condition} · Humidity {city.humidity}% · Pressure {city.pressure} hPa</div>
 
               <div className="flex items-baseline gap-4 mt-4">
-                <div className="text-6xl sm:text-7xl font-extralight tracking-tighter text-white tabular-nums">
+                <div className="text-6xl sm:text-7xl font-light tracking-tighter text-white tabular-nums">
                   {convertTemp(city.temp)}°
                 </div>
-                <div className="text-sm text-white/70 space-y-1">
-                  <div>H: <span className="text-white font-medium">{convertTemp(city.high)}°</span></div>
-                  <div>L: <span className="text-white font-medium">{convertTemp(city.low)}°</span></div>
+                <div className="text-xs text-white/60 space-y-0.5">
+                  <div>High {convertTemp(city.high)}°</div>
+                  <div>Low {convertTemp(city.low)}°</div>
                 </div>
               </div>
             </div>
 
             {/* Condition Icon Visual Card */}
-            <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-xl">
+            <div className="flex flex-col items-center justify-center p-5 rounded-2xl bg-white/[0.03] border border-white/[0.05] backdrop-blur-xl">
               <Icon
                 name={city.condition === 'Sunny' ? 'Sun' : city.condition === 'Rainy' ? 'CloudRain' : city.condition === 'Aurora' ? 'Sparkles' : 'CloudSun'}
-                size={54}
+                size={48}
                 className={city.condition === 'Sunny' ? 'text-amber-400' : city.condition === 'Rainy' ? 'text-cyan-400' : 'text-purple-300'}
               />
-              <span className="text-sm font-semibold text-white mt-3">{city.condition}</span>
-              <span className="text-[11px] text-white/50">Air Quality: <span className={`font-medium ${city.airQuality.color}`}>{city.airQuality.status}</span></span>
+              <span className="text-xs font-semibold text-white mt-2.5">{city.condition}</span>
+              <span className="text-[11px] text-white/40 mt-0.5">Air Quality: {city.airQuality.status}</span>
             </div>
           </div>
         </div>
 
         {/* Hourly Forecast Slider */}
-        <div className="rounded-2xl p-4 bg-slate-900/50 border border-white/10 backdrop-blur-xl">
+        <div className="rounded-2xl p-4 bg-white/[0.02] border border-white/[0.05] backdrop-blur-xl">
           <div className="flex items-center justify-between mb-3 px-1">
-            <span className="text-xs font-semibold text-white/70 uppercase tracking-wider flex items-center gap-1.5">
-              <Icon name="Clock" size={13} className="text-cyan-400" /> Hourly Forecast
-            </span>
-            <span className="text-[10px] text-cyan-400/80 font-mono">24-Hour Orbital Pass</span>
+            <span className="text-xs font-semibold text-white/80">Hourly Forecast</span>
+            <span className="text-[11px] text-white/40">Next 24 hours</span>
           </div>
 
           <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none">

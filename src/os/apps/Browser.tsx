@@ -121,7 +121,7 @@ export function BrowserApp({ payload }: Props) {
     addLog(`[Cache] Cache-bypass refresh -> ${loadedUrl}`, 'info');
     setTimeout(() => {
       if (iframeRef.current && loadedUrl !== 'about:start') {
-        iframeRef.current.src = loadedUrl;
+        iframeRef.current.src = `/api/proxy?url=${encodeURIComponent(loadedUrl)}&_t=${Date.now()}`;
       }
       setIsLoading(false);
     }, 350);
@@ -135,6 +135,11 @@ export function BrowserApp({ payload }: Props) {
     return loadedUrl;
   }, [engine, loadedUrl]);
 
+  const resolvedIframeSrc = useMemo(() => {
+    if (!loadedUrl || loadedUrl === 'about:start' || loadedUrl === 'about:blank') return '';
+    return `/api/proxy?url=${encodeURIComponent(loadedUrl)}`;
+  }, [loadedUrl]);
+
   const isStartPage = loadedUrl === 'about:start';
 
   return (
@@ -142,13 +147,13 @@ export function BrowserApp({ payload }: Props) {
       {/* -------------------------------------------------------------------
           Top Browser Toolbar & Proxy Engine Bar
          ------------------------------------------------------------------- */}
-      <div className="flex items-center gap-2 px-3 py-2 border-b border-white/10 bg-black/40 backdrop-blur-md">
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-white/[0.06] bg-black/50 backdrop-blur-md">
         {/* Navigation buttons */}
         <div className="flex items-center gap-1">
           <button
             onClick={goBack}
             disabled={historyIdx === 0}
-            className="p-1.5 rounded text-white/70 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition"
+            className="p-1.5 rounded-lg text-white/70 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition"
             title="Back"
           >
             <Icon name="ArrowLeft" size={15} />
@@ -156,21 +161,21 @@ export function BrowserApp({ payload }: Props) {
           <button
             onClick={goForward}
             disabled={historyIdx >= history.length - 1}
-            className="p-1.5 rounded text-white/70 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition"
+            className="p-1.5 rounded-lg text-white/70 hover:bg-white/10 disabled:opacity-30 disabled:hover:bg-transparent transition"
             title="Forward"
           >
             <Icon name="ArrowRight" size={15} />
           </button>
           <button
             onClick={refreshPage}
-            className={`p-1.5 rounded text-white/70 hover:bg-white/10 transition ${isLoading ? 'animate-spin text-cyan-400' : ''}`}
+            className={`p-1.5 rounded-lg text-white/70 hover:bg-white/10 transition ${isLoading ? 'animate-spin text-cyan-400' : ''}`}
             title="Reload Page"
           >
             <Icon name="RefreshCw" size={14} />
           </button>
           <button
             onClick={() => navigateTo('about:start')}
-            className={`p-1.5 rounded transition ${isStartPage ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10'}`}
+            className={`p-1.5 rounded-lg transition ${isStartPage ? 'bg-white/15 text-white' : 'text-white/70 hover:bg-white/10'}`}
             title="Home / Start Page"
           >
             <Icon name="Home" size={14} />
@@ -183,11 +188,11 @@ export function BrowserApp({ payload }: Props) {
             e.preventDefault();
             navigateTo(inputVal);
           }}
-          className="flex-1 flex items-center gap-2 bg-white/5 border border-white/15 rounded-xl px-3 py-1.5 focus-within:border-cyan-400 focus-within:bg-black/60 transition"
+          className="flex-1 flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-1.5 focus-within:border-white/30 focus-within:bg-black/60 transition"
         >
           <div className="flex items-center gap-1.5 text-white/40">
             {isStartPage ? (
-              <Icon name="Sparkles" size={14} className="text-cyan-400" />
+              <Icon name="Sparkles" size={14} className="text-white/60" />
             ) : loadedUrl.startsWith('https://') ? (
               <Icon name="Lock" size={13} className="text-emerald-400" />
             ) : (
@@ -212,7 +217,7 @@ export function BrowserApp({ payload }: Props) {
           )}
           <button
             type="submit"
-            className="p-1 rounded-md bg-white/10 hover:bg-cyan-500 hover:text-black text-white/80 transition"
+            className="p-1 rounded-md bg-white/10 hover:bg-white/20 text-white/80 transition"
             title="Go"
           >
             <Icon name="CornerDownLeft" size={12} />
@@ -220,7 +225,7 @@ export function BrowserApp({ payload }: Props) {
         </form>
 
         {/* Engine Switcher (Scramjet vs Ultraviolet vs Direct) */}
-        <div className="hidden sm:flex items-center gap-1 bg-white/5 p-0.5 rounded-lg border border-white/10">
+        <div className="hidden sm:flex items-center gap-1 bg-white/[0.04] p-0.5 rounded-lg border border-white/[0.06]">
           <button
             onClick={() => {
               setEngine('scramjet');
@@ -338,13 +343,13 @@ export function BrowserApp({ payload }: Props) {
       {/* -------------------------------------------------------------------
           Quick Bookmarks / Tunnels Bar
          ------------------------------------------------------------------- */}
-      <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-white/10 bg-zinc-950/70 overflow-x-auto shrink-0">
+      <div className="flex items-center gap-1.5 px-3 py-1.5 border-b border-white/[0.06] bg-zinc-950/70 overflow-x-auto shrink-0">
         <span className="text-[10px] text-white/40 uppercase tracking-widest font-mono mr-1">Tunnels:</span>
         {SPEED_DIAL.slice(0, 6).map((b) => (
           <button
             key={b.url}
             onClick={() => navigateTo(b.url)}
-            className="px-2.5 py-1 rounded-md text-[11px] flex items-center gap-1.5 whitespace-nowrap transition text-white/70 hover:bg-white/10 hover:text-white"
+            className="px-2.5 py-1 rounded-lg text-[11px] flex items-center gap-1.5 whitespace-nowrap transition text-white/70 hover:bg-white/[0.06] hover:text-white"
           >
             <Icon name={b.icon} size={12} />
             <span>{b.label}</span>
@@ -352,9 +357,9 @@ export function BrowserApp({ payload }: Props) {
         ))}
 
         <div className="ml-auto flex items-center gap-2">
-          <span className="text-[10px] font-mono text-white/40">Raw Encoded:</span>
-          <span className="text-[10px] font-mono text-white/60 bg-white/5 px-2 py-0.5 rounded truncate max-w-xs">
-            {encodedProxyString}
+          <span className="text-[10px] font-mono text-white/40">Proxy Engine:</span>
+          <span className="text-[10px] font-mono text-white/60 bg-white/[0.04] px-2 py-0.5 rounded-md truncate max-w-xs border border-white/[0.06]">
+            {engine.toUpperCase()} ({encodedProxyString.length > 20 ? encodedProxyString.slice(0, 20) + '...' : encodedProxyString})
           </span>
         </div>
       </div>
@@ -371,16 +376,16 @@ export function BrowserApp({ payload }: Props) {
           /* ===============================================================
              Clean Browser Start Page & Speed Dial Grid
              =============================================================== */
-          <div className="h-full w-full overflow-y-auto p-6 md:p-10 flex flex-col items-center justify-center bg-gradient-to-b from-zinc-950 via-zinc-900 to-black">
+          <div className="h-full w-full overflow-y-auto p-6 md:p-10 flex flex-col items-center justify-center bg-gradient-to-b from-zinc-950 via-zinc-900/60 to-black">
             <div className="w-full max-w-3xl space-y-8">
               {/* Logo & Headline */}
               <div className="text-center space-y-2">
-                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white shadow-xl shadow-cyan-500/20 mb-1">
-                  <Icon name="Globe" size={28} />
+                <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white shadow-xl shadow-cyan-500/10 mb-1">
+                  <Icon name="Globe" size={26} />
                 </div>
-                <h1 className="text-2xl font-bold tracking-tight text-white">Liquid Web Browser</h1>
-                <p className="text-xs text-white/60">
-                  Sandboxed proxy browsing engine powered by <span className="text-cyan-400 font-semibold">{engine.toUpperCase()}</span> and Bare Server v3
+                <h1 className="text-2xl font-semibold tracking-tight text-white">Liquid Web Browser</h1>
+                <p className="text-xs text-white/50">
+                  Unrestricted web access via streaming reverse proxy tunnel
                 </p>
               </div>
 
@@ -390,20 +395,20 @@ export function BrowserApp({ payload }: Props) {
                   e.preventDefault();
                   if (inputVal.trim()) navigateTo(inputVal);
                 }}
-                className="flex items-center gap-3 bg-white/10 hover:bg-white/15 focus-within:bg-black/80 focus-within:ring-2 focus-within:ring-cyan-400/80 rounded-2xl px-5 py-3.5 border border-white/15 shadow-2xl transition"
+                className="flex items-center gap-3 bg-white/[0.04] hover:bg-white/[0.06] focus-within:bg-black/80 focus-within:ring-1 focus-within:ring-white/20 rounded-2xl px-5 py-3.5 border border-white/[0.08] shadow-2xl transition"
               >
-                <Icon name="Search" size={18} className="text-cyan-400 shrink-0" />
+                <Icon name="Search" size={17} className="text-white/40 shrink-0" />
                 <input
                   type="text"
                   value={inputVal}
                   onChange={(e) => setInputVal(e.target.value)}
                   placeholder="Search the web or type a URL..."
-                  className="w-full bg-transparent text-sm text-white placeholder-white/40 outline-none"
+                  className="w-full bg-transparent text-sm text-white placeholder-white/30 outline-none"
                   autoFocus
                 />
                 <button
                   type="submit"
-                  className="px-3.5 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black text-xs font-semibold shrink-0 transition"
+                  className="px-4 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-medium shrink-0 transition border border-white/[0.08]"
                 >
                   Browse
                 </button>
@@ -411,7 +416,7 @@ export function BrowserApp({ payload }: Props) {
 
               {/* Speed Dial Grid */}
               <div className="space-y-3">
-                <div className="text-xs font-semibold uppercase tracking-wider text-white/50 px-1">
+                <div className="text-xs font-medium text-white/50 px-1">
                   Speed Dial & Bookmarks
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -419,16 +424,16 @@ export function BrowserApp({ payload }: Props) {
                     <button
                       key={item.url}
                       onClick={() => navigateTo(item.url)}
-                      className="p-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-cyan-400/50 transition text-left flex flex-col justify-between h-28 group"
+                      className="p-3.5 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] transition text-left flex flex-col justify-between h-28 group"
                     >
-                      <div className="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-cyan-300 group-hover:scale-110 transition">
-                        <Icon name={item.icon} size={16} />
+                      <div className="w-8 h-8 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-white/80 group-hover:text-white transition">
+                        <Icon name={item.icon} size={15} />
                       </div>
                       <div>
-                        <div className="text-xs font-semibold text-white group-hover:text-cyan-300 transition">
+                        <div className="text-xs font-medium text-white group-hover:text-cyan-300 transition">
                           {item.label}
                         </div>
-                        <div className="text-[10px] text-white/50 truncate">{item.desc}</div>
+                        <div className="text-[10px] text-white/40 truncate">{item.desc}</div>
                       </div>
                     </button>
                   ))}
@@ -465,7 +470,7 @@ export function BrowserApp({ payload }: Props) {
           <div className="h-full w-full relative bg-white">
             <iframe
               ref={iframeRef}
-              src={loadedUrl}
+              src={resolvedIframeSrc}
               className="h-full w-full border-0 bg-white"
               title="proxy-browser"
               sandbox="allow-scripts allow-same-origin allow-forms allow-popups"

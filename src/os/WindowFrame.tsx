@@ -259,27 +259,30 @@ export function WindowFrame({ win, children }: Props) {
   const presets = getSnapPresets(typeof window !== 'undefined' ? window.innerWidth : 1200, typeof window !== 'undefined' ? window.innerHeight : 800);
 
   // Shell-specific Window Frame Classes & Styles
-  let windowFrameClasses = 'liquid-glass-window rounded-xl';
-  let titleBarClasses = 'h-10 px-3 bg-black/40 border-b border-white/10 text-white';
+  let windowFrameClasses = 'liquid-glass-window rounded-2xl border border-white/[0.08]';
+  let titleBarClasses = 'h-10 px-3 bg-white/[0.03] border-b border-white/[0.06] text-white';
 
   if (isXP) {
-    windowFrameClasses = 'bg-[#ece9d8] text-black shadow-2xl rounded-t-lg border-2 border-[#0055ea] overflow-hidden';
+    windowFrameClasses = 'bg-[#ece9d8] text-black shadow-2xl rounded-t-lg border border-[#0055ea] overflow-hidden';
     titleBarClasses = 'h-8 px-2 bg-gradient-to-r from-[#0055ea] via-[#0855eb] to-[#3f88f8] text-white font-bold text-xs select-none shadow-inner border-b border-[#002f87]';
   } else if (isVista) {
-    windowFrameClasses = 'bg-slate-950/80 backdrop-blur-2xl rounded-lg shadow-2xl border border-sky-400/40 ring-1 ring-white/20';
-    titleBarClasses = 'h-9 px-3 bg-gradient-to-b from-sky-400/25 via-slate-900/60 to-black/80 border-b border-sky-400/30 text-white';
+    windowFrameClasses = 'bg-slate-950/80 backdrop-blur-2xl rounded-xl shadow-2xl border border-white/10 ring-1 ring-white/10';
+    titleBarClasses = 'h-9 px-3 bg-gradient-to-b from-sky-400/20 via-slate-900/60 to-black/80 border-b border-white/[0.06] text-white';
   } else if (isWin10) {
-    windowFrameClasses = 'bg-zinc-950 rounded-none shadow-2xl border border-zinc-700';
+    windowFrameClasses = 'bg-zinc-950 rounded-none shadow-2xl border border-zinc-800';
     titleBarClasses = 'h-8 px-3 bg-zinc-900 border-b border-zinc-800 text-white/90 text-xs';
   } else if (isDeX) {
-    windowFrameClasses = 'bg-zinc-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/15';
-    titleBarClasses = 'h-10 px-3.5 bg-black/50 border-b border-white/10 text-white';
+    windowFrameClasses = 'bg-zinc-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/[0.08]';
+    titleBarClasses = 'h-10 px-3.5 bg-black/40 border-b border-white/[0.06] text-white';
   } else if (isChromeOS) {
-    windowFrameClasses = 'bg-zinc-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10';
-    titleBarClasses = 'h-9 px-3 bg-white/5 border-b border-white/10 text-white/90';
+    windowFrameClasses = 'bg-zinc-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/[0.08]';
+    titleBarClasses = 'h-9 px-3 bg-white/[0.04] border-b border-white/[0.06] text-white/90';
   } else if (isZorin) {
-    windowFrameClasses = 'bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-sky-500/30 ring-1 ring-white/10';
-    titleBarClasses = 'h-10 px-3.5 bg-black/40 border-b border-white/10 text-white';
+    windowFrameClasses = 'bg-slate-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/[0.08]';
+    titleBarClasses = 'h-10 px-3.5 bg-black/40 border-b border-white/[0.06] text-white';
+  } else if (isMac) {
+    windowFrameClasses = 'bg-zinc-900/95 backdrop-blur-2xl rounded-2xl shadow-2xl border border-white/[0.08] ring-1 ring-black/40';
+    titleBarClasses = 'h-9 px-3 bg-white/[0.02] border-b border-black/30 text-white/90 text-xs';
   }
 
   const isTopmost = windows.filter((w) => !w.minimized).reduce((max, w) => (w.zIndex > max ? w.zIndex : max), 0) === win.zIndex;
@@ -357,29 +360,35 @@ export function WindowFrame({ win, children }: Props) {
             onDoubleClick={() => toggleMaximize(win.id)}
             style={{ touchAction: 'none' }}
           >
-            {/* MAC OS: Top-Left Traffic Light Beads */}
+            {/* MAC OS: Authentic Traffic Light Beads with Group Hover and Balanced Title */}
             {isMac && (
-              <div className="flex items-center gap-2 relative z-50 pointer-events-auto pl-1">
+              <div
+                className="flex items-center gap-2 pl-2 relative z-50 pointer-events-auto w-16 group"
+                onPointerDown={(e) => e.stopPropagation()}
+              >
+                {/* Close (Red / しょうきょ) */}
                 <button
-                  className="h-3.5 w-3.5 rounded-full bg-[#FF5F56] border border-black/20 hover:opacity-80 active:scale-90 transition flex items-center justify-center text-[8px] text-black/70 group"
+                  className="h-3 w-3 rounded-full bg-[#FF5F56] border border-[#E0443E] hover:brightness-90 active:brightness-75 transition flex items-center justify-center text-[8px] text-[#4A0002] shadow-[inset_0_1px_rgba(255,255,255,0.4)]"
                   onClick={(e) => { e.stopPropagation(); closeWindow(win.id); }}
-                  title="Close"
+                  title="閉じる (Close)"
                 >
-                  <span className="opacity-0 group-hover:opacity-100 font-bold">×</span>
+                  <span className="opacity-0 group-hover:opacity-100 font-bold leading-none select-none">✕</span>
                 </button>
+                {/* Minimize (Yellow / さいしょうか) */}
                 <button
-                  className="h-3.5 w-3.5 rounded-full bg-[#FFBD2E] border border-black/20 hover:opacity-80 active:scale-90 transition flex items-center justify-center text-[8px] text-black/70 group"
+                  className="h-3 w-3 rounded-full bg-[#FFBD2E] border border-[#DEA123] hover:brightness-90 active:brightness-75 transition flex items-center justify-center text-[8px] text-[#5A3B00] shadow-[inset_0_1px_rgba(255,255,255,0.4)]"
                   onClick={(e) => { e.stopPropagation(); minimizeWindow(win.id); }}
-                  title="Minimize"
+                  title="最小化 (Minimize)"
                 >
-                  <span className="opacity-0 group-hover:opacity-100 font-bold">-</span>
+                  <span className="opacity-0 group-hover:opacity-100 font-bold leading-none select-none">−</span>
                 </button>
+                {/* Maximize (Green / さいだいか) */}
                 <button
-                  className="h-3.5 w-3.5 rounded-full bg-[#27C93F] border border-black/20 hover:opacity-80 active:scale-90 transition flex items-center justify-center text-[8px] text-black/70 group"
+                  className="h-3 w-3 rounded-full bg-[#27C93F] border border-[#1AAB29] hover:brightness-90 active:brightness-75 transition flex items-center justify-center text-[8px] text-[#0A4812] shadow-[inset_0_1px_rgba(255,255,255,0.4)]"
                   onClick={(e) => { e.stopPropagation(); toggleMaximize(win.id); }}
-                  title="Maximize"
+                  title="フルスクリーン / 最大化 (Maximize)"
                 >
-                  <span className="opacity-0 group-hover:opacity-100 font-bold">+</span>
+                  <span className="opacity-0 group-hover:opacity-100 font-bold leading-none select-none">⤢</span>
                 </button>
               </div>
             )}
@@ -574,6 +583,8 @@ export function WindowFrame({ win, children }: Props) {
                   <Icon name="X" size={14} />
                 </button>
               </div>
+            ) : isMac ? (
+              <div className="w-16 shrink-0 pointer-events-none" />
             ) : null}
           </div>
         )}

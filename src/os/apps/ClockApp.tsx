@@ -267,44 +267,44 @@ export function ClockApp() {
         </div>
 
         {/* Tab Buttons with touch hit areas */}
-        <div className="flex items-center gap-1 bg-white/5 p-1 rounded-2xl border border-white/10">
+        <div className="flex items-center gap-1 bg-white/[0.04] p-1 rounded-2xl border border-white/[0.06]">
           <button
             onClick={() => { playSound('click'); setActiveTab('clock'); }}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
-              activeTab === 'clock' ? 'bg-cyan-500 text-black shadow-md' : 'text-white/70 hover:text-white'
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium transition ${
+              activeTab === 'clock' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
             }`}
           >
-            <Icon name="Globe" size={14} />
+            <Icon name="Globe" size={13} />
             <span>World Clock</span>
           </button>
 
           <button
             onClick={() => { playSound('click'); setActiveTab('alarm'); }}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
-              activeTab === 'alarm' ? 'bg-cyan-500 text-black shadow-md' : 'text-white/70 hover:text-white'
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium transition ${
+              activeTab === 'alarm' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
             }`}
           >
-            <Icon name="AlarmClock" size={14} />
+            <Icon name="AlarmClock" size={13} />
             <span>Alarms</span>
           </button>
 
           <button
             onClick={() => { playSound('click'); setActiveTab('stopwatch'); }}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
-              activeTab === 'stopwatch' ? 'bg-cyan-500 text-black shadow-md' : 'text-white/70 hover:text-white'
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium transition ${
+              activeTab === 'stopwatch' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
             }`}
           >
-            <Icon name="Timer" size={14} />
+            <Icon name="Timer" size={13} />
             <span>Stopwatch</span>
           </button>
 
           <button
             onClick={() => { playSound('click'); setActiveTab('timer'); }}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
-              activeTab === 'timer' ? 'bg-cyan-500 text-black shadow-md' : 'text-white/70 hover:text-white'
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-medium transition ${
+              activeTab === 'timer' ? 'bg-white/10 text-white shadow-sm' : 'text-white/60 hover:text-white'
             }`}
           >
-            <Icon name="Clock" size={14} />
+            <Icon name="Clock" size={13} />
             <span>Timer</span>
           </button>
         </div>
@@ -318,10 +318,10 @@ export function ClockApp() {
         {activeTab === 'clock' && (
           <div className="max-w-4xl mx-auto space-y-6">
             {/* Main Primary Local Clock Banner */}
-            <div className="rounded-3xl p-6 sm:p-8 bg-gradient-to-br from-indigo-950/60 via-slate-900/80 to-cyan-950/50 border border-cyan-500/20 backdrop-blur-2xl flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl">
+            <div className="rounded-3xl p-6 sm:p-8 bg-white/[0.03] border border-white/[0.06] backdrop-blur-xl flex flex-col sm:flex-row items-center justify-between gap-6 shadow-xl">
               <div>
-                <div className="text-xs font-mono text-cyan-300 uppercase tracking-widest flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                <div className="text-[11px] font-mono text-white/50 uppercase tracking-widest flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
                   Primary System Time
                 </div>
                 <div className="text-5xl sm:text-7xl font-extralight tracking-tight text-white mt-2 tabular-nums">
@@ -333,12 +333,12 @@ export function ClockApp() {
               </div>
 
               {/* Analog Clock Dial */}
-              <div className="w-28 h-28 rounded-full border-2 border-cyan-400/40 relative flex items-center justify-center shadow-xl bg-slate-900/80">
+              <div className="w-28 h-28 rounded-full border border-white/[0.08] relative flex items-center justify-center bg-white/[0.02]">
                 {/* 12 notches */}
                 {[0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330].map((deg) => (
                   <div
                     key={deg}
-                    className="absolute w-0.5 h-2 bg-cyan-300/40"
+                    className="absolute w-0.5 h-2 bg-white/20"
                     style={{ transform: `rotate(${deg}deg) translateY(-48px)` }}
                   />
                 ))}
@@ -363,8 +363,8 @@ export function ClockApp() {
 
             {/* Global World Cities Matrix */}
             <div>
-              <div className="text-xs font-semibold text-white/60 uppercase tracking-wider mb-3 px-1">
-                Global Orbital Clocks
+              <div className="text-xs font-medium text-white/50 tracking-wider mb-3 px-1">
+                Global Cities
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -377,13 +377,13 @@ export function ClockApp() {
                   return (
                     <div
                       key={c.city}
-                      className="p-4 rounded-2xl bg-slate-900/50 border border-white/10 hover:border-cyan-400/30 transition flex items-center justify-between"
+                      className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.05] transition flex items-center justify-between"
                     >
                       <div>
-                        <div className="font-bold text-white text-base">{c.city}</div>
-                        <div className="text-xs text-white/50">{c.country}</div>
+                        <div className="font-medium text-white text-sm">{c.city}</div>
+                        <div className="text-xs text-white/40">{c.country}</div>
                       </div>
-                      <div className="text-2xl font-mono text-cyan-300 font-light tabular-nums">
+                      <div className="text-2xl font-light text-white/90 tabular-nums">
                         {cityTime}
                       </div>
                     </div>
@@ -477,26 +477,26 @@ export function ClockApp() {
             )}
 
             {/* List of Alarms */}
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {alarms.map((alarm) => (
                 <div
                   key={alarm.id}
                   className={`p-4 sm:p-5 rounded-2xl border transition flex items-center justify-between ${
                     alarm.enabled
-                      ? 'bg-slate-900/70 border-cyan-500/30 shadow-lg shadow-cyan-500/5'
-                      : 'bg-slate-900/30 border-white/5 opacity-60'
+                      ? 'bg-white/[0.03] border-white/[0.08] shadow-lg shadow-black/20'
+                      : 'bg-white/[0.015] border-white/[0.04] opacity-50'
                   }`}
                 >
                   <div className="flex items-center gap-4">
                     <button
                       onClick={() => toggleAlarm(alarm.id)}
-                      className={`w-12 h-6 rounded-full transition-colors relative flex items-center px-1 ${
+                      className={`w-11 h-6 rounded-full transition-colors relative flex items-center px-0.5 ${
                         alarm.enabled ? 'bg-cyan-500' : 'bg-white/20'
                       }`}
                     >
                       <div
-                        className={`w-4 h-4 rounded-full bg-white transition-transform ${
-                          alarm.enabled ? 'translate-x-6' : 'translate-x-0'
+                        className={`w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${
+                          alarm.enabled ? 'translate-x-5' : 'translate-x-0'
                         }`}
                       />
                     </button>
@@ -505,9 +505,9 @@ export function ClockApp() {
                       <div className="text-3xl sm:text-4xl font-extralight text-white font-mono tabular-nums">
                         {alarm.time}
                       </div>
-                      <div className="text-xs text-white/70 font-medium mt-0.5 flex items-center gap-2">
+                      <div className="text-xs text-white/60 font-medium mt-0.5 flex items-center gap-2">
                         <span>{alarm.label}</span>
-                        <span className="text-[10px] text-cyan-300/60 font-mono">({alarm.sound})</span>
+                        <span className="text-[10px] text-white/40 font-mono">({alarm.sound})</span>
                       </div>
                     </div>
                   </div>
@@ -515,17 +515,17 @@ export function ClockApp() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => playAlarmSound(alarm.sound)}
-                      className="p-2 rounded-xl hover:bg-white/10 text-white/60 hover:text-cyan-300 transition"
+                      className="p-2 rounded-xl hover:bg-white/10 text-white/50 hover:text-white transition"
                       title="Test Tone"
                     >
-                      <Icon name="Volume2" size={16} />
+                      <Icon name="Volume2" size={15} />
                     </button>
                     <button
                       onClick={() => deleteAlarm(alarm.id)}
                       className="p-2 rounded-xl hover:bg-rose-500/20 text-white/40 hover:text-rose-400 transition"
                       title="Delete"
                     >
-                      <Icon name="Trash2" size={16} />
+                      <Icon name="Trash2" size={15} />
                     </button>
                   </div>
                 </div>
