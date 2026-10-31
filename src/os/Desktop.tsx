@@ -20,6 +20,9 @@ import { CalendarApp } from './apps/CalendarApp';
 import { WeatherApp } from './apps/Weather';
 import { ClockApp } from './apps/ClockApp';
 import { AIAssistantApp } from './apps/AIAssistantApp';
+import { Calculator } from './apps/Calculator';
+import { TaskManager } from './apps/TaskManager';
+import { SynthVisualizerApp } from './apps/SynthVisualizer';
 import { Icon } from './Icon';
 import { AppId, TASKBAR_APPS } from './types';
 import { AppLogo } from './AppLogo';
@@ -923,9 +926,9 @@ export function Desktop() {
             }}
             className="liquid-glass-taskbar fixed top-4 left-1/2 -translate-x-1/2 z-[100] rounded-2xl px-6 py-3 flex items-center gap-3"
           >
-            <Icon name="Sparkles" size={18} className="text-orange-400" />
+            <Icon name="Sparkles" size={17} className="text-cyan-400" />
             <span className="text-sm text-white/90 font-medium">
-              Welcome back, {user.name}! LiquidOS-4.1.0-Beta initialized with #glass-distortion.
+              Welcome back, {user.name}.
             </span>
           </motion.div>
         )}

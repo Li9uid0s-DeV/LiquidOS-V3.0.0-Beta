@@ -7,11 +7,10 @@ export default defineConfig({
   plugins: [react()],
   
 
-  base: '/LiquidOS-V3.0.0-Beta/',
+  base: process.env.NODE_ENV === 'production' ? './' : '/',
 
   resolve: {
     alias: {
-   
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },

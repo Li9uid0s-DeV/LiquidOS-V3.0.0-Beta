@@ -379,6 +379,15 @@ If no OS command is requested, set action to null or type "none". Return ONLY ra
     }
   });
 
+  // Support legacy subpaths like /LiquidOS-V3.0.0-Beta/ or /LiquidOS-4.1.0-Beta/
+  app.use((req, _res, next) => {
+    if (req.url.startsWith('/LiquidOS-')) {
+      const rewritten = req.url.replace(/^\/LiquidOS-[^/]+/, '') || '/';
+      req.url = rewritten;
+    }
+    next();
+  });
+
   // Vite middlewares in development
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

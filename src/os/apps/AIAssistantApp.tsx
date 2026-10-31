@@ -40,7 +40,7 @@ export function AIAssistantApp() {
     {
       id: 'msg-welcome',
       sender: 'assistant',
-      text: 'こんにちは！**Liquid Copilot AI Studio** (Gemini 3.8 Flash搭載) へようこそ。\n\nOSのテーマ変更（Zorin OS, HyperOS, Windows 8, Vista, XPなど）、ウィンドウの整理、アプリの起動、コード生成や日常の質問など、どんなことでもお気軽にご指示ください。',
+      text: 'こんにちは。Liquid Copilotです。\n\nテーマの切り替え（Zorin OS、Windows 11/10/Vista/XP、HyperOSなど）やアプリの起動、各種タスクをお手伝いします。ご指示を入力してください。',
       timestamp: Date.now(),
     },
   ]);
